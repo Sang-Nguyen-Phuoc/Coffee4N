@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "403929767880",
+    "firebase_url": "https://coffee4n-d8c79-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "coffee4n-d8c79",
+    "storage_bucket": "coffee4n-d8c79.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:403929767880:android:ed302b37f9cf827caf2afd",
+        "android_client_info": {
+          "package_name": "com.example.coffee4n"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDea9-S8MscKP5O6Sbr7U38ZI91tbNAmz4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
