@@ -1,7 +1,8 @@
 plugins {
+    id("kotlin-kapt")
     id("com.android.application")
-    id("org.jetbrains.kotlin.android") version "2.0.0" // Thay đổi từ 1.9.22 thành 2.0.0
-    id("org.jetbrains.kotlin.plugin.compose") version "2.0.0" // Cập nhật để khớp với Kotlin
+    id("org.jetbrains.kotlin.android") version "2.0.0"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.0"
     id("com.google.gms.google-services")
 }
 
@@ -43,6 +44,10 @@ android {
 }
 
 dependencies {
+    implementation(libs.firebase.auth.ktx)
+    kapt("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.9.0")

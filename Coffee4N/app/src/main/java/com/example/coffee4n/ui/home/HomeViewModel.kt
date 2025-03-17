@@ -2,36 +2,39 @@ package com.example.coffee4n.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.coffee4n.model.CoffeeItem
+import com.example.coffee4n.App
+import com.example.coffee4n.model.Product
+import com.example.coffee4n.repository.ProductRepository
+import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class HomeViewModel : ViewModel() {
+    private val productRepository: ProductRepository = ProductRepository(
+        productDao = App.database.productDao(),
+        firebaseDatabase = FirebaseDatabase.getInstance()
+    )
+
     private val _state = MutableStateFlow(HomeState())
-    val state: StateFlow<HomeState> = _state.asStateFlow()
+    val state: StateFlow<HomeState> get() = _state
 
     init {
-        // Tải dữ liệu mẫu khi khởi tạo
-        loadCoffeeItems()
+        loadProducts()
     }
 
-    private fun loadCoffeeItems() {
+    private fun loadProducts() {
         viewModelScope.launch {
-            // Dữ liệu mẫu (sau này có thể thay bằng gọi repository)
-            val coffeeList = listOf(
-                CoffeeItem("1", "Espresso", 2.5),
-                CoffeeItem("2", "Latte", 3.0),
-                CoffeeItem("3", "Cappuccino", 3.5)
-            )
-            _state.value = _state.value.copy(coffeeItems = coffeeList)
+            productRepository.getProductsFlow().collectLatest { products ->
+                _state.value = _state.value.copy(products = products)
+            }
         }
     }
 
-    fun updateGreeting(newText: String) {
+    fun addProduct(product: Product) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(greetingText = newText)
+            productRepository.addProduct(product)
         }
     }
 }

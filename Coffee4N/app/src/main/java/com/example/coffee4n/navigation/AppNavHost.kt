@@ -5,7 +5,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.coffee4n.ui.detail.DetailScreen
 import com.example.coffee4n.ui.home.HomeScreen
 
 @Composable
@@ -18,15 +17,8 @@ fun AppNavHost(
         startDestination = startDestination
     ) {
         composable(Destinations.HOME) {
-            HomeScreen(
-                onItemClick = { itemId ->
-                    navController.navigate(Destinations.detailRoute(itemId))
-                }
-            )
+            HomeScreen()
         }
-        composable(Destinations.DETAIL) { backStackEntry ->
-            val itemId = backStackEntry.arguments?.getString("itemId") ?: "Unknown"
-            DetailScreen(itemId = itemId)
-        }
+
     }
 }

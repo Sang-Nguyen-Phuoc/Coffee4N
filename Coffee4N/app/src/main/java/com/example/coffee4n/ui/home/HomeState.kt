@@ -1,8 +1,7 @@
 package com.example.coffee4n.ui.home
 
-import com.example.coffee4n.model.CoffeeItem
+import com.example.coffee4n.model.Product
 
 data class HomeState(
-    val greetingText: String = "Hello Android!",
-    val coffeeItems: List<CoffeeItem> = emptyList()
+    val products: List<Product> = emptyList()
 )
