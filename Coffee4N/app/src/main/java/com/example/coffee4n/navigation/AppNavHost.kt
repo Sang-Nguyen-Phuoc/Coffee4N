@@ -19,6 +19,17 @@ fun AppNavHost(
         composable(Destinations.HOME) {
             HomeScreen()
         }
-
+        composable(Destinations.CART) {
+            navBackStackEntry ->
+            val userId = navBackStackEntry.arguments?.getString("userId")?.toIntOrNull() ?: 0
+            CartScreen(
+                userId = userId,
+                onCheckout = {
+                    navController.navigate(Destinations.HOME) {
+                        popUpTo(Destinations.HOME) { this.inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }
