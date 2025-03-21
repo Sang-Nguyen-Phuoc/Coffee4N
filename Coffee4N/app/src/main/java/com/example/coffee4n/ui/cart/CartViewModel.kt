@@ -33,7 +33,7 @@ class CartViewModel(
     // Tăng số lượng của một item
     fun increaseQuantity(cartItem: CartItem) {
         viewModelScope.launch {
-            val updatedItem = cartItem.copy(slave = cartItem.quantity + 1)
+            val updatedItem = cartItem.copy(quantity = cartItem.quantity + 1)
             cartItemRepository.addCartItem(updatedItem)
         }
     }
