@@ -10,6 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.example.coffee4n.navigation.AppNavHost
 import com.example.coffee4n.navigation.Destinations
+import com.example.coffee4n.navigation.OwnerNavHost
 import com.example.coffee4n.ui.theme.Coffee4NTheme
 
 class MainActivity : ComponentActivity() {
@@ -32,6 +33,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     AppNavHost(startDestination = startDestination)
+//                    OwnerNavHost(startDestination = Destinations.OWNER_DASHBOARD)
                 }
             }
         }
