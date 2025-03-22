@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -77,7 +78,7 @@ fun WelcomeScreen(navController: NavController) {
             TextButton(onClick = { navController.navigate(Destinations.HOME) }) {
                 Text(
                     "Continue as a guest",
-                    color = Color(0xFF00C4B4), // Màu xanh ngọc nhạt
+                    color = MaterialTheme.colorScheme.tertiary, // Màu xanh ngọc nhạt
                     fontSize = 14.sp, // Kích thước chữ 14sp
                     style = TextStyle(textDecoration = TextDecoration.Underline) // Gạch chân
                 )
