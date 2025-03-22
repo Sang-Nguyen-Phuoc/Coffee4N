@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -21,16 +21,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.coffee4n.R
 import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,12 +63,12 @@ fun LoginScreen(navController: NavController) {
     // Password visibility toggle
     var passwordVisible by remember { mutableStateOf(false) }
 
-    // Xử lý side effects
-    LaunchedEffect(loginState.value) {
-        when (val state = loginState.value) {
+
+    LaunchedEffect(loginState) {
+        when (loginState.value) {
             is LoginState.Success -> {
                 with(prefs.edit()) {
-                    putString("authToken", state.token)
+                    putString("authToken", (loginState.value as LoginState.Success).token)
                     putBoolean("isFirstTime", false)
                     apply()
                 }
@@ -74,7 +78,7 @@ fun LoginScreen(navController: NavController) {
                 viewModel.resetLoginState()
             }
             is LoginState.Error -> {
-                snackbarHostState.showSnackbar(state.message)
+                snackbarHostState.showSnackbar((loginState.value as LoginState.Error).message)
             }
             else -> {}
         }
@@ -86,7 +90,7 @@ fun LoginScreen(navController: NavController) {
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Back")
                     }
                 }
             )
@@ -103,14 +107,14 @@ fun LoginScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(32.dp))
             TextField(
                 value = email.value,
-                onValueChange = { viewModel.onEmailChange(it) },
+                onValueChange = viewModel::onEmailChange,
                 label = { Text("Enter your email") },
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(16.dp))
             TextField(
                 value = password.value,
-                onValueChange = { viewModel.onPasswordChange(it) },
+                onValueChange = viewModel::onPasswordChange,
                 label = { Text("Enter your password") },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -132,7 +136,7 @@ fun LoginScreen(navController: NavController) {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = { viewModel.login() },
+                onClick = viewModel::login,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
