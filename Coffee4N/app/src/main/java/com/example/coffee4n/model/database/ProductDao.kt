@@ -13,6 +13,6 @@ interface ProductDao {
     @Insert
     suspend fun insertProduct(product: Product)
 
-    @Query("DELETE FROM product WHERE id = :id")
-    suspend fun deleteProduct(id: Int)
+    @Query("SELECT COUNT(*) FROM product")
+    suspend fun getProductCount(): Int
 }

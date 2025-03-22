@@ -13,12 +13,8 @@ class UserRepository(
     private val firebaseAuth: FirebaseAuth,
     private val firebaseDatabase: FirebaseDatabase
 ) {
-    // Lấy thông tin người dùng từ local
-    suspend fun getUserById(userId: Int): User? {
-        return userDao.getUserById(userId)
-    }
+    suspend fun getUserById(userId: Int): User? = userDao.getUserById(userId)
 
-    // Đồng bộ thông tin người dùng từ Firebase
     suspend fun syncUserFromRemote(userId: Int) {
         val firebaseUser = firebaseAuth.currentUser
         if (firebaseUser != null) {
@@ -28,16 +24,70 @@ class UserRepository(
         }
     }
 
-    // Cập nhật thông tin người dùng
     suspend fun updateUser(user: User) {
-        userDao.insertUser(user) // Lưu vào local
-        firebaseDatabase.getReference("users").child(user.id.toString()).setValue(user).await() // Đẩy lên Firebase
+        userDao.insertUser(user)
+        firebaseDatabase.getReference("users").child(user.id.toString()).setValue(user).await()
     }
 
-    // Lấy thông tin người dùng dưới dạng Flow
     fun getUserFlow(userId: Int): Flow<User?> = flow {
         emit(userDao.getUserById(userId))
         syncUserFromRemote(userId)
         emit(userDao.getUserById(userId))
+    }
+
+    suspend fun register(email: String, password: String, username: String): String? {
+        return try {
+            val authResult = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+            val firebaseUser = authResult.user
+            if (firebaseUser != null) {
+                val user = User(
+                    id = firebaseUser.uid.hashCode(),
+                    username = username,
+                    email = email,
+                    phone = "",
+                    name = "",
+                    address = ""
+                )
+                firebaseDatabase.getReference("users").child(firebaseUser.uid).setValue(user).await()
+                userDao.insertUser(user)
+                firebaseUser.uid
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun login(email: String, password: String): String? {
+        return try {
+            val authResult = firebaseAuth.signInWithEmailAndPassword(email, password).await()
+            authResult.user?.uid
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun sendOTP(email: String): Boolean {
+        return try {
+            firebaseAuth.sendPasswordResetEmail(email).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun verifyOTP(token: String, newPassword: String): Boolean {
+        return try {
+            firebaseAuth.confirmPasswordReset(token, newPassword).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun resetPassword(email: String, newPassword: String) {
+        val user = firebaseAuth.currentUser
+        if (user != null && user.email == email) {
+            user.updatePassword(newPassword).await()
+        }
     }
 }
