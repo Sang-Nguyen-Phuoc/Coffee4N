@@ -41,8 +41,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                 ) {
 //                    Text("Chao")
-//                    AppNavHost(startDestination = startDestination)
-                    OwnerNavHost(startDestination = Destinations.OWNER_DASHBOARD)
+                    AppNavHost(startDestination = startDestination)
+//                    OwnerNavHost(startDestination = Destinations.OWNER_DASHBOARD)
                 }
             }
         }
