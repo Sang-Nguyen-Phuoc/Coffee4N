@@ -2,19 +2,31 @@ package com.example.coffee4n.ui.signup
 
 import android.content.Context
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -52,6 +64,10 @@ fun SignupScreen(navController: NavController) {
     val confirmPassword = viewModel.confirmPassword.collectAsState()
     val signupState = viewModel.signupState.collectAsState()
 
+    // Trạng thái toggle hiển thị mật khẩu
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
+
     // Xử lý side effects
     LaunchedEffect(signupState.value) {
         when (val state = signupState.value) {
@@ -73,102 +89,187 @@ fun SignupScreen(navController: NavController) {
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
+                .padding(24.dp)
         ) {
-            Text("Welcome back! Glad to see you, Again!", fontSize = 24.sp)
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(
+                    Icons.Default.ArrowBackIosNew,
+                    contentDescription = "Back",
+                    tint = Color.Black
+                )
+            }
+            Spacer(modifier = Modifier.height(88.dp))
+            Text(
+                "Create your account",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
             Spacer(modifier = Modifier.height(32.dp))
             TextField(
                 value = username.value,
                 onValueChange = { viewModel.onUsernameChange(it) },
-                label = { Text("Username") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Enter your username", color = Color.Gray) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFF5F5F5)),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedContainerColor = Color(0xFFF5F5F5),
+                    unfocusedContainerColor = Color(0xFFF5F5F5)
+                ),
+                textStyle = TextStyle(fontSize = 20.sp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             TextField(
                 value = email.value,
                 onValueChange = { viewModel.onEmailChange(it) },
-                label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Enter your email", color = Color.Gray) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFF5F5F5)),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedContainerColor = Color(0xFFF5F5F5),
+                    unfocusedContainerColor = Color(0xFFF5F5F5)
+                ),
+                textStyle = TextStyle(fontSize = 20.sp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             TextField(
                 value = password.value,
                 onValueChange = { viewModel.onPasswordChange(it) },
-                label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Enter your password", color = Color.Gray) },
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = "Toggle password visibility",
+                            tint = Color.Gray
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFF5F5F5)),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedContainerColor = Color(0xFFF5F5F5),
+                    unfocusedContainerColor = Color(0xFFF5F5F5)
+                ),
+                textStyle = TextStyle(fontSize = 20.sp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             TextField(
                 value = confirmPassword.value,
                 onValueChange = { viewModel.onConfirmPasswordChange(it) },
-                label = { Text("Confirm password") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Confirm your password", color = Color.Gray) },
+                visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                        Icon(
+                            imageVector = if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = "Toggle confirm password visibility",
+                            tint = Color.Gray
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFF5F5F5)),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedContainerColor = Color(0xFFF5F5F5),
+                    unfocusedContainerColor = Color(0xFFF5F5F5)
+                ),
+                textStyle = TextStyle(fontSize = 20.sp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = { viewModel.signup() },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
+                    .height(50.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
                 enabled = signupState.value !is SignupState.Loading
             ) {
                 if (signupState.value is SignupState.Loading) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+                    CircularProgressIndicator(color = Color.White)
                 } else {
-                    Text("Agree and Register")
+                    Text(" Agree and Register", color = Color.White)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Or Login with",
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                text = "Or Signup with",
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                color = Color.Gray
             )
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                IconButton(onClick = { /* Handle Facebook login */ }) {
+                IconButton(onClick = { /* Handle Facebook signup */ }) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_facebook),
-                        contentDescription = "Facebook Login",
+                        contentDescription = "Facebook Signup",
                         modifier = Modifier.size(40.dp)
                     )
                 }
-                IconButton(onClick = { /* Handle Google login */ }) {
+                IconButton(onClick = { /* Handle Google signup */ }) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_google),
-                        contentDescription = "Google Login",
+                        contentDescription = "Google Signup",
                         modifier = Modifier.size(40.dp)
                     )
                 }
-                IconButton(onClick = { /* Handle Apple login */ }) {
+                IconButton(onClick = { /* Handle Apple signup */ }) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_apple),
-                        contentDescription = "Apple Login",
+                        contentDescription = "Apple Signup",
                         modifier = Modifier.size(40.dp)
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            TextButton(
+                onClick = { navController.navigate(Destinations.LOGIN) },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text(
+                    "Already have an account? ",
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    "Login Now",
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
         }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
