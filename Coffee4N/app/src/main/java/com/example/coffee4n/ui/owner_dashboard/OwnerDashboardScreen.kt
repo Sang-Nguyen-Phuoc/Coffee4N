@@ -1,4 +1,4 @@
-package com.example.coffee4n.ui.owner
+package com.example.coffee4n.ui.owner_dashboard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

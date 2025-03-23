@@ -1,4 +1,4 @@
-package com.example.coffee4n.ui.owner
+package com.example.coffee4n.ui.owner_dashboard
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

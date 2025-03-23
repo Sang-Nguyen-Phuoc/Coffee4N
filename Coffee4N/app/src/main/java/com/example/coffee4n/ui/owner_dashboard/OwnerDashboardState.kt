@@ -1,4 +1,4 @@
-package com.example.coffee4n.ui.owner
+package com.example.coffee4n.ui.owner_dashboard
 
 data class OwnerDashboardState(
     val ordersCount: Int = 0,
