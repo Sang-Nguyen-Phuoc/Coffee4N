@@ -1,20 +1,17 @@
 package com.example.coffee4n
 
 import android.app.Application
-import androidx.room.Room
 import com.example.coffee4n.model.database.AppDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 class App : Application() {
-    companion object {
-        lateinit var database: AppDatabase
-    }
-
+    // No need for applicationScope or database initialization here
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     override fun onCreate() {
         super.onCreate()
-        database = Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java,
-            "coffee_db"
-        ).build()
+        // Any other app initialization can go here
+        AppDatabase.initDatabase(this, applicationScope)
     }
 }

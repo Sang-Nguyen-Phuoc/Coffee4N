@@ -1,62 +1,45 @@
 package com.example.coffee4n.repository
 
-import com.google.firebase.database.FirebaseDatabase
 import com.example.coffee4n.model.Employee
 import com.example.coffee4n.model.database.EmployeeDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.tasks.await
 
 class EmployeeRepository(
-    private val employeeDao: EmployeeDao,
-    private val firebaseDatabase: FirebaseDatabase
+    private val employeeDao: EmployeeDao
 ) {
-    // Lấy tất cả nhân viên từ local (RoomDB)
-    suspend fun getAllEmployeesFromLocal(): List<Employee> {
+    // Get all employees from local database
+    suspend fun getAllEmployees(): List<Employee> {
         return employeeDao.getAllEmployees()
     }
 
-    // Lấy nhân viên theo ID từ local
+    // Get employee by ID
     suspend fun getEmployeeById(id: Int): Employee? {
         return employeeDao.getEmployeeById(id)
     }
 
-    // Đồng bộ danh sách nhân viên từ Firebase
-    private suspend fun syncEmployeesFromRemote() {
-        val snapshot = firebaseDatabase.getReference("employees").get().await()
-        val employees = snapshot.children.mapNotNull { it.getValue(Employee::class.java) }
-        employees.forEach { employeeDao.insertEmployee(it) }
-    }
-
-    // Thêm nhân viên mới (lưu vào local và đẩy lên Firebase)
+    // Add new employee to local database
     suspend fun addEmployee(employee: Employee) {
         employeeDao.insertEmployee(employee)
-        firebaseDatabase.getReference("employees").child(employee.id.toString()).setValue(employee).await()
     }
 
-    // Cập nhật thông tin nhân viên
+    // Update employee information
     suspend fun updateEmployee(employee: Employee) {
         employeeDao.insertEmployee(employee)
-        firebaseDatabase.getReference("employees").child(employee.id.toString()).setValue(employee).await()
     }
 
-    // Xóa nhân viên
+    // Delete employee
     suspend fun deleteEmployee(id: Int) {
         employeeDao.deleteEmployee(id)
-        firebaseDatabase.getReference("employees").child(id.toString()).removeValue().await()
     }
 
-    // Lấy danh sách nhân viên dưới dạng Flow để UI tự động cập nhật
+    // Get employees as Flow for automatic UI updates
     fun getEmployeesFlow(): Flow<List<Employee>> = flow {
         emit(employeeDao.getAllEmployees())
-        syncEmployeesFromRemote()
-        emit(employeeDao.getAllEmployees())
     }
 
-    // Lấy nhân viên theo ID dưới dạng Flow
+    // Get employee by ID as Flow
     fun getEmployeeFlow(id: Int): Flow<Employee?> = flow {
-        emit(employeeDao.getEmployeeById(id))
-        syncEmployeesFromRemote()
         emit(employeeDao.getEmployeeById(id))
     }
 }

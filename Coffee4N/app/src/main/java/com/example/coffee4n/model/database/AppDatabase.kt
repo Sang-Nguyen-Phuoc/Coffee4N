@@ -7,6 +7,9 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.coffee4n.model.*
 import com.example.coffee4n.utils.Converters
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Database(
     entities = [
@@ -44,14 +47,35 @@ abstract class AppDatabase : RoomDatabase() {
         private var INSTANCE: AppDatabase? = null
 
         fun getDatabase(context: Context): AppDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "coffee4n_database"
-                ).build()
-                INSTANCE = instance
-                instance
+            // Return instance immediately if already initialized
+            INSTANCE?.let { return it }
+
+            // Otherwise create the database on IO thread
+            return synchronized(this) {
+                // Double check inside synchronized block
+                val instance = INSTANCE
+                if (instance != null) {
+                    instance
+                } else {
+                    val newInstance = Room.databaseBuilder(
+                        context.applicationContext,
+                        AppDatabase::class.java,
+                        "coffee4n_database_v2"
+                    )
+                        .fallbackToDestructiveMigration()
+                        .build()
+
+                    INSTANCE = newInstance
+                    newInstance
+                }
+            }
+        }
+
+        // Optional: Add a method for pre-initializing database in a coroutine scope
+        // This can be called from App.onCreate if you want to start database init early
+        fun initDatabase(context: Context, scope: CoroutineScope) {
+            scope.launch(Dispatchers.IO) {
+                getDatabase(context)
             }
         }
     }

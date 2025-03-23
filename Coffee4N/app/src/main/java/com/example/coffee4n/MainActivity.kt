@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import com.example.coffee4n.navigation.AppNavHost
+import com.example.coffee4n.navigation.OwnerNavHost
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.ui.theme.Coffee4NTheme
 
@@ -40,8 +41,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                 ) {
 //                    Text("Chao")
-                    AppNavHost(startDestination = startDestination)
-//                    OwnerNavHost(startDestination = Destinations.OWNER_DASHBOARD)
+//                    AppNavHost(startDestination = startDestination)
+                    OwnerNavHost(startDestination = Destinations.OWNER_DASHBOARD)
                 }
             }
         }
