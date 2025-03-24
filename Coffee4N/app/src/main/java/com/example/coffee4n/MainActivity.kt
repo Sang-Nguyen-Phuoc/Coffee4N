@@ -12,14 +12,19 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
+import com.cloudinary.android.MediaManager
 import com.example.coffee4n.navigation.AppNavHost
 import com.example.coffee4n.navigation.OwnerNavHost
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.ui.theme.Coffee4NTheme
 
 class MainActivity : ComponentActivity() {
+    val cloudName : String = "dizp8jtoi"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
+        initCloudinary()
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowCompat.getInsetsController(window, window.decorView)
@@ -46,5 +51,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun initCloudinary() {
+        val config = hashMapOf("cloud_name" to cloudName)
+        MediaManager.init(this, config)
     }
 }
