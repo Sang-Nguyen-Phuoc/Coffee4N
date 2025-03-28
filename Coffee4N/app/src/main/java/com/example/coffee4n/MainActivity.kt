@@ -24,8 +24,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
 
-        initCloudinary()
-
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowCompat.getInsetsController(window, window.decorView)
         controller.isAppearanceLightStatusBars = false
@@ -46,8 +44,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                 ) {
 //                    Text("Chao")
-                    AppNavHost(startDestination = startDestination)
-//                    OwnerNavHost(startDestination = Destinations.OWNER_DASHBOARD)
+//                    AppNavHost(startDestination = startDestination)
+                    OwnerNavHost(startDestination = Destinations.OWNER_DASHBOARD)
                 }
             }
         }

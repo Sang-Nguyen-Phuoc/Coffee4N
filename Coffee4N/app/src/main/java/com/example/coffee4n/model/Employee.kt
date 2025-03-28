@@ -10,11 +10,11 @@ import java.util.Date
 @TypeConverters(Converters::class)
 data class Employee(
     @PrimaryKey
-    val id: Int,
-    val name: String,
-    val position: String,
-    val salary: Double,
-    val hireDate: Date,
-    val phone: String,
-    val email: String
+    val id: Int = 0,
+    val name: String = "",
+    val position: String = "",
+    val salary: Double = 0.0,
+    val hireDate: Date = Date(),
+    val phone: String = "",
+    val email: String = ""
 )

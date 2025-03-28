@@ -2,11 +2,8 @@ package com.example.coffee4n.ui.owner_employee
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.coffee4n.App
 import com.example.coffee4n.model.Employee
-import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.repository.EmployeeRepository
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,15 +18,11 @@ import java.util.Locale
 class OwnerEmployeeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: EmployeeRepository
-
     private val _state = MutableStateFlow(OwnerEmployeeState(isLoading = true))
     val state: StateFlow<OwnerEmployeeState> = _state.asStateFlow()
 
     init {
-        val database = AppDatabase.getDatabase(application)
-        repository = EmployeeRepository(
-            database.employeeDao()
-        )
+        repository = EmployeeRepository(FirebaseDatabase.getInstance())
         loadEmployees()
     }
 
@@ -37,21 +30,22 @@ class OwnerEmployeeViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             try {
-                // Collect initial employees from the repository's flow
-                viewModelScope.launch {
-                    repository.getEmployeesFlow().collect { employees ->
-                        _state.update { it.copy(
+                repository.getEmployeesFlow().collect { employees ->
+                    _state.update {
+                        it.copy(
                             employees = employees,
                             isLoading = false,
                             error = null
-                        ) }
+                        )
                     }
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(
-                    isLoading = false,
-                    error = "Failed to load employees: ${e.message}"
-                ) }
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Failed to load employees: ${e.message}"
+                    )
+                }
             }
         }
     }
@@ -119,7 +113,6 @@ class OwnerEmployeeViewModel(application: Application) : AndroidViewModel(applic
         val salary = currentState.salaryInput.toDoubleOrNull() ?: 0.0
 
         if (currentState.nameInput.isBlank() || currentState.positionInput.isBlank()) {
-            // Show validation error
             _state.update { it.copy(error = "Name and position cannot be empty") }
             return
         }
@@ -136,22 +129,13 @@ class OwnerEmployeeViewModel(application: Application) : AndroidViewModel(applic
                         phone = currentState.phoneInput,
                         email = currentState.emailInput
                     )
-
                     repository.updateEmployee(updatedEmployee)
-
-                    // Force a UI refresh by updating the state directly
-                    _state.update { it.copy(
-                        showAddEditDialog = false,
-                        // This forces the UI to update with the edited employee
-                        employees = currentState.employees.map {
-                            if (it.id == updatedEmployee.id) updatedEmployee else it
-                        }
-                    )}
+                    _state.update { it.copy(showAddEditDialog = false) }
                 } else {
-                    // Add new employee
-                    val maxId = currentState.employees.maxByOrNull { it.id }?.id ?: 0
+                    // Add new employee with a manually assigned ID
+                    val maxId = repository.getMaxEmployeeId() // Get the maximum ID from Firebase
                     val newEmployee = Employee(
-                        id = maxId + 1,
+                        id = maxId + 1, // Assign the next available ID
                         name = currentState.nameInput,
                         position = currentState.positionInput,
                         salary = salary,
@@ -159,15 +143,8 @@ class OwnerEmployeeViewModel(application: Application) : AndroidViewModel(applic
                         phone = currentState.phoneInput,
                         email = currentState.emailInput
                     )
-
                     repository.addEmployee(newEmployee)
-
-                    // Force a UI refresh by updating the state directly
-                    _state.update { it.copy(
-                        showAddEditDialog = false,
-                        // This forces the UI to update with the new employee
-                        employees = currentState.employees + newEmployee
-                    )}
+                    _state.update { it.copy(showAddEditDialog = false) }
                 }
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Failed to save employee: ${e.message}") }
@@ -197,7 +174,6 @@ class OwnerEmployeeViewModel(application: Application) : AndroidViewModel(applic
                         employeeToDelete = null
                     )
                 }
-                // loadEmployees() // No need to reload as the Flow will update automatically
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Failed to delete employee: ${e.message}") }
             }

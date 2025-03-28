@@ -19,6 +19,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.coffee4n.ui.owner_dashboard.OwnerDashboardScreen
 import com.example.coffee4n.ui.owner_employee.OwnerEmployeeScreen
+import com.example.coffee4n.ui.owner_table.OwnerTableScreen
 
 @Composable
 fun OwnerNavHost(startDestination: String = Destinations.OWNER_ORDERS) {
@@ -142,9 +143,7 @@ fun OwnerNavHost(startDestination: String = Destinations.OWNER_ORDERS) {
             composable(Destinations.OWNER_ANALYTICS) {
                 Text("Analytics Placeholder", color = Color(0xFF313131), modifier = Modifier.padding(innerPadding))
             }
-            composable(Destinations.OWNER_TABLES) {
-                Text("Tables Placeholder", color = Color(0xFF313131), modifier = Modifier.padding(innerPadding))
-            }
+            composable(Destinations.OWNER_TABLES) { OwnerTableScreen() }
         }
     }
 }
