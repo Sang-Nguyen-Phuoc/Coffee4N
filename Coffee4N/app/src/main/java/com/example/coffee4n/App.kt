@@ -6,14 +6,22 @@ import com.example.coffee4n.utils.Cloudinary.initCloudinary
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class App : Application() {
-    // No need for applicationScope or database initialization here
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // Singleton instance of the database
+    val database: AppDatabase by lazy {
+        AppDatabase.getDatabase(this)
+    }
+
     override fun onCreate() {
         super.onCreate()
         // Any other app initialization can go here
-        AppDatabase.initDatabase(this, applicationScope)
+        // Optional: Pre-initialize the database on a background thread
+        val applicationScope = CoroutineScope(Dispatchers.IO)
+        applicationScope.launch {
+            database // Trigger lazy initialization
+        }
         initCloudinary(this)
     }
 }
