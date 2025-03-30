@@ -23,6 +23,7 @@ class HomeViewModel(private val productRepository: ProductRepository) : ViewMode
 
     fun insertSampleProducts() {
         viewModelScope.launch {
+//            productRepository.clearProducts()
             productRepository.insertSampleProducts()
         }
     }
