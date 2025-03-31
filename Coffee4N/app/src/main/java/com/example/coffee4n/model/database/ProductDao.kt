@@ -22,6 +22,6 @@ interface ProductDao {
     @Query("DELETE FROM product WHERE id = :productId")
     suspend fun deleteProductById(productId: Int)
 
-    @Query("UPDATE product SET name = :name, description = :description, price = :price, category = :category WHERE id = :productId")
-    suspend fun updateProductById(productId: Int, name: String, description: String, price: Double, category: String)
+    @Query("UPDATE product SET name = :name, description = :description, price = :price, categoryId = :categoryId WHERE id = :productId")
+    suspend fun updateProductById(productId: Int, name: String, description: String, price: Double, categoryId: Int)
 }

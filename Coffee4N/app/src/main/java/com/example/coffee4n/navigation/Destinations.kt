@@ -12,6 +12,7 @@ object Destinations {
     // Owner destinations
     const val OWNER_DASHBOARD = "owner_dashboard"
     const val OWNER_ORDERS = "owner_orders"
+    const val OWNER_PRODUCTS = "owner_products"
     const val OWNER_INVENTORY = "owner_inventory"
     const val OWNER_EMPLOYEES = "owner_employees"
     const val OWNER_ANALYTICS = "owner_analytics"

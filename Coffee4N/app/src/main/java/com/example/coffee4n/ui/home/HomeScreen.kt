@@ -1,5 +1,7 @@
 package com.example.coffee4n.ui.home
 
+import android.app.Application
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,6 +11,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -28,16 +31,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.coffee4n.R
+import com.example.coffee4n.model.Category
 import com.example.coffee4n.model.Product
 import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.repository.ProductRepository
@@ -47,59 +55,42 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun HomeScreen(navController: NavController) {
     val context = LocalContext.current
-    val productDao = AppDatabase.getDatabase(context).productDao()
     val viewModel: HomeViewModel = viewModel(
-        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                return HomeViewModel(ProductRepository(productDao)) as T
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return HomeViewModel(context.applicationContext as Application) as T
             }
         }
     )
-    viewModel.insertSampleProducts()
-    val products = viewModel.products.collectAsState()
 
-    val categories = listOf("All", "Espresso", "Latte", "Cappuccino", "Mocha", "Tea")
-
-    var selectedCategory by remember { mutableStateOf("All") }
-    var searchQuery by remember { mutableStateOf("") }
-    var sortAscending by remember { mutableStateOf(true) }
-    var showBestSellers by remember { mutableStateOf(false) }
-
-    var expanded by remember { mutableStateOf(false) }
+    val state by viewModel.state.collectAsState()
 
 
-    val filteredProducts = products.value
-        .filter { it.category == selectedCategory || selectedCategory == "All" }
-        .filter { it.name.contains(searchQuery, ignoreCase = true) } //
-        .let { list -> if (showBestSellers) list.filter { it.isBestSeller } else list } //
-        .sortedBy { if (sortAscending) it.price else -it.price } //
+    val filteredProducts = state.products
+        .filter { it.categoryId == state.selectedCategory || state.selectedCategory == 0 }
+        .filter { it.name.contains(state.searchQuery, ignoreCase = true) }
+        .let { list -> if (state.showBestSellers) list.filter { it.isBestSeller } else list }
+        .sortedBy { if (state.sortAscending) it.price else -it.price }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+        modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
         // Location Bar
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.LocationOn, contentDescription = "Location")
             Spacer(modifier = Modifier.width(8.dp))
             Text("Location, Bilzen, Tanjungbalai", fontSize = 14.sp)
         }
+
         Spacer(modifier = Modifier.height(16.dp))
 
         // Search Bar
         TextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
+            value = state.searchQuery,
+            onValueChange = { viewModel.updateSearchQuery(it) },
             placeholder = { Text("Search coffee") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .clip(RoundedCornerShape(8.dp))
+            modifier = Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(8.dp))
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -141,105 +132,73 @@ fun HomeScreen(navController: NavController) {
 
         // Category Tabs
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(categories) { category ->
-                val isSelected = category == selectedCategory
+            val categories = listOf(Category(0, "All", "")) + state.categories
+            itemsIndexed(categories) { index, category ->
+                val isSelected = category.id == state.selectedCategory
                 Button(
-                    onClick = { selectedCategory = category },
+                    onClick = { viewModel.updateCategory(category.id) },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isSelected) Color(red = 52, green = 235, blue = 174) else Color.Gray,
+                        containerColor = if (isSelected) Color(52, 235, 174) else Color.Gray,
                         contentColor = Color.White
                     ),
                     modifier = Modifier.height(40.dp)
                 ) {
-                    Text(category, fontSize = 14.sp)
+                    Text(category.name, fontSize = 14.sp)
                 }
             }
         }
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Filter Options (Sort by Price & Best Sellers)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        // Sort & Best Seller Toggle
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                modifier = Modifier.clip(RoundedCornerShape(8.dp))
                     .background(Color.LightGray)
-                    .clickable { expanded = true }
+                    .clickable { viewModel.toggleSortOrder() }
                     .padding(vertical = 8.dp, horizontal = 14.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.FilterAlt, // Icon lọc
-                        contentDescription = "Sort Filter",
-                        modifier = Modifier.size(24.dp) // Kích thước icon
-                    )
-                    Spacer(modifier = Modifier.width(4.dp)) // Khoảng cách giữa icon và text
-                    Text(
-                        text = if (sortAscending) "Low to High" else "High to Low",
-                        fontSize = 14.sp, // Kích thước chữ tùy chỉnh
-                        fontWeight = FontWeight.Medium
-                    )
+                    Icon(Icons.Default.Sort, contentDescription = "Sort")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(if (state.sortAscending) "Low to High" else "High to Low")
                 }
-            }
-
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Low to High") },
-                    onClick = {
-                        sortAscending = true
-                        expanded = false
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("High to Low") },
-                    onClick = {
-                        sortAscending = false
-                        expanded = false
-                    }
-                )
             }
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // 🌟 Best Seller Toggle
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Best Sellers",
-                    color = Color.White
-                )
+                Text("Best Sellers", color = Color.White)
                 Spacer(modifier = Modifier.width(8.dp))
                 Switch(
-                    checked = showBestSellers,
-                    onCheckedChange = { showBestSellers = it },
+                    checked = state.showBestSellers,
+                    onCheckedChange = { viewModel.toggleBestSellers() },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,          // Màu nút tròn khi bật
-                        checkedTrackColor = Color(red = 52, green = 235, blue = 174),         // Màu nền khi bật
-                        uncheckedThumbColor = Color.Gray,        // Màu nút tròn khi tắt
-                        uncheckedTrackColor = Color.LightGray    // Màu nền khi tắt
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = Color(52, 235, 174),
+                        uncheckedThumbColor = Color.Gray,
+                        uncheckedTrackColor = Color.LightGray
                     )
                 )
             }
         }
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Product Grid View
-        LazyVerticalGrid (
+        // Product Grid
+        LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 150.dp),
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(filteredProducts) {product ->
+            items(filteredProducts) { product ->
                 ProductCard(product)
             }
         }
     }
 }
+
 
 
 @Composable
@@ -258,14 +217,26 @@ fun ProductCard(product: Product) {
             ) {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     // Hình ảnh sản phẩm
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_coffee),
-                        contentDescription = product.name,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(100.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                    )
+                    if (!product.imageUrl.isNullOrEmpty()) {
+                        Image(
+                            painter = rememberAsyncImagePainter(model = product.imageUrl),
+                            contentDescription = product.name,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
+
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_coffee),
+                            contentDescription = product.name,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
 
                     // Mark star as Best Seller
                     if (product.isBestSeller) {

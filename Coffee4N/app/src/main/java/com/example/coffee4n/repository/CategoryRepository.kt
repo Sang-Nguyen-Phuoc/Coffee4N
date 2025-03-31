@@ -1,43 +1,104 @@
 package com.example.coffee4n.repository
 
-import com.google.firebase.database.FirebaseDatabase
 import com.example.coffee4n.model.Category
-import com.example.coffee4n.model.database.CategoryDao
+import com.google.firebase.database.*
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
+import kotlin.coroutines.resumeWithException
 
 class CategoryRepository(
-    private val categoryDao: CategoryDao,
     private val firebaseDatabase: FirebaseDatabase
 ) {
-    suspend fun getAllCategoriesFromLocal(): List<Category> {
-        return categoryDao.getAllCategories()
+    private val categoryRef = firebaseDatabase.getReference("categories")
+    private val lastCategoryIdRef = firebaseDatabase.getReference("metadata/lastCategoryId")
+
+    // Fetch categories as a Flow
+    fun getCategoriesFlow(): Flow<List<Category>> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val categories = snapshot.children.mapNotNull { it.getValue(Category::class.java) }
+                trySend(categories).isSuccess
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+
+        categoryRef.addValueEventListener(listener)
+
+        awaitClose {
+            categoryRef.removeEventListener(listener)
+        }
     }
 
-    suspend fun getCategoryById(id: Int): Category? {
-        return categoryDao.getCategoryById(id)
+    // Fetch a single category by ID as a Flow
+    fun getCategoryFlow(id: Int): Flow<Category?> = callbackFlow {
+        val reference = categoryRef.child(id.toString())
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val category = snapshot.getValue(Category::class.java)
+                trySend(category).isSuccess
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+
+        reference.addValueEventListener(listener)
+
+        awaitClose {
+            reference.removeEventListener(listener)
+        }
     }
 
-    private suspend fun syncCategoriesFromRemote() {
-        val snapshot = firebaseDatabase.getReference("categories").get().await()
-        val categories = snapshot.children.mapNotNull { it.getValue(Category::class.java) }
-        categories.forEach { categoryDao.insertCategory(it) }
-    }
-
+    // Add a new category with auto-increment ID
     suspend fun addCategory(category: Category) {
-        categoryDao.insertCategory(category)
-        firebaseDatabase.getReference("categories").child(category.id.toString()).setValue(category).await()
+        val newId = getNextCategoryId()
+        val newCategory = category.copy(id = newId)
+        categoryRef.child(newId.toString()).setValue(newCategory).await()
     }
 
+    // Update an existing category
+    suspend fun updateCategory(category: Category) {
+        categoryRef.child(category.id.toString()).setValue(category).await()
+    }
+
+    // Delete a category from Firebase
     suspend fun deleteCategory(id: Int) {
-        categoryDao.deleteCategory(id)
-        firebaseDatabase.getReference("categories").child(id.toString()).removeValue().await()
+        categoryRef.child(id.toString()).removeValue().await()
     }
 
-    fun getCategoriesFlow(): Flow<List<Category>> = flow {
-        emit(categoryDao.getAllCategories())
-        syncCategoriesFromRemote()
-        emit(categoryDao.getAllCategories())
+    // Get next category ID using metadata/lastCategoryId
+    private suspend fun getNextCategoryId(): Int {
+        return suspendCancellableCoroutine { continuation ->
+            lastCategoryIdRef.runTransaction(object : Transaction.Handler {
+                override fun doTransaction(mutableData: MutableData): Transaction.Result {
+                    val lastId = mutableData.getValue(Int::class.java) ?: 0
+                    val nextId = lastId + 1
+                    mutableData.value = nextId
+                    return Transaction.success(mutableData)
+                }
+
+                override fun onComplete(
+                    error: DatabaseError?,
+                    committed: Boolean,
+                    currentData: DataSnapshot?
+                ) {
+                    if (continuation.isActive) {
+                        if (error != null) {
+                            continuation.resumeWithException(error.toException())
+                        } else {
+                            val nextId = currentData?.getValue(Int::class.java) ?: 1
+                            continuation.resume(nextId) {}
+                        }
+                    }
+                }
+            })
+        }
     }
 }

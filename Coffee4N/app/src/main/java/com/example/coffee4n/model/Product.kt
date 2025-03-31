@@ -5,30 +5,19 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "product")
 data class Product(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey(autoGenerate = true) val id: Int,
     val name: String,
     val description: String,
     val price: Double,
-    val category: String,
-    val isBestSeller: Boolean = false
-)
 
+    @get:JvmName("getBestSeller")
+    @set:JvmName("setBestSeller")
+    var isBestSeller: Boolean = false,
 
-//package com.example.coffee4n.model
-
-
-//
-//import androidx.room.Entity
-//import androidx.room.PrimaryKey
-//
-//@Entity(tableName = "product")
-//data class Product(
-//    @PrimaryKey val id: Int,
-//    val name: String,
-//    val description: String,
-//    val price: Double,
-//    val categoryId: Int,
-//    val imageUrl: String,
-//    val stockQuantity: Int,
-//    val costPrice: Double
-//)
+    val categoryId: Int,
+    val imageUrl: String="",
+    val stockQuantity: Int = 0,
+    val costPrice: Double = 0.0
+) {
+    constructor() : this(0, "", "", 0.0, false, 0, "", 0, 0.0)
+}
