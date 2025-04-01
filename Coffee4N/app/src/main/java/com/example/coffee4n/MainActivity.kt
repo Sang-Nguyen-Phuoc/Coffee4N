@@ -45,8 +45,8 @@ class MainActivity : ComponentActivity() {
                 ) {
 //                    Text("Chao")
 //                    AppNavHost(startDestination = startDestination)
-//                    OwnerNavHost(startDestination = Destinations.OWNER_DASHBOARD)
-                    AppNavHost(startDestination = Destinations.HOME)
+                    OwnerNavHost(startDestination = Destinations.OWNER_PRODUCTS)
+//                    AppNavHost(startDestination = Destinations.HOME)
                 }
             }
         }

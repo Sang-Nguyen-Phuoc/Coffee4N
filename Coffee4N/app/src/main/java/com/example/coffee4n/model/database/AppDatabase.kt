@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
         Attendance::class,
         Booking::class
     ],
-    version = 2,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
