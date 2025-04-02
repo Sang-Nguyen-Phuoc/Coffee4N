@@ -17,7 +17,13 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+
+        buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"${project.property("CLOUDINARY_CLOUD_NAME")}\"")
+        buildConfigField("String", "CLOUDINARY_API_KEY", "\"${project.property("CLOUDINARY_API_KEY")}\"")
+        buildConfigField("String", "CLOUDINARY_API_SECRET", "\"${project.property("CLOUDINARY_API_SECRET")}\"")
     }
+
 
     buildTypes {
         release {
@@ -37,10 +43,11 @@ android {
     }
     buildFeatures {
         compose = true
-        viewBinding = true
+        viewBinding = false
+        buildConfig = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "2.0.0" // Cập nhật để khớp với Kotlin 2.0.0
+        kotlinCompilerExtensionVersion = "2.0.0"
     }
 }
 
@@ -48,7 +55,6 @@ dependencies {
     implementation(libs.firebase.auth.ktx)
     implementation(libs.espresso.core)
     implementation(libs.androidx.room.ktx)
-    //noinspection KaptUsageInsteadOfKsp
     kapt(libs.androidx.room.compiler)
 
     implementation(libs.androidx.core.ktx.v1120)
@@ -82,7 +88,6 @@ dependencies {
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
-
 
     implementation("com.cloudinary:cloudinary-android:3.0.2")
     implementation("com.github.bumptech.glide:glide:4.16.0")

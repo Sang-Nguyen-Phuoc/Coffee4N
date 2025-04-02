@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import com.example.coffee4n.BuildConfig
 
 object Cloudinary {
 
@@ -22,9 +23,9 @@ object Cloudinary {
     fun initCloudinary(context: Context) {
         if (!isInitialized) {
             val config = mapOf(
-                "cloud_name" to "dizp8jtoi",
-                "api_key" to "123273799372117",
-                "api_secret" to "rbVIYo9jeLF-HAMF-zaTpbYk_eI"
+                "cloud_name" to BuildConfig.CLOUDINARY_CLOUD_NAME,
+                "api_key" to BuildConfig.CLOUDINARY_API_KEY,
+                "api_secret" to BuildConfig.CLOUDINARY_API_SECRET,
             )
             MediaManager.init(context.applicationContext, config)
             isInitialized = true
