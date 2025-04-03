@@ -9,6 +9,7 @@ import com.example.coffee4n.model.*
 import com.example.coffee4n.utils.Converters
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 @Database(
@@ -74,7 +75,7 @@ abstract class AppDatabase : RoomDatabase() {
         // Optional: Add a method for pre-initializing database in a coroutine scope
         // This can be called from App.onCreate if you want to start database init early
         fun initDatabase(context: Context, scope: CoroutineScope) {
-            scope.launch(Dispatchers.IO) {
+            scope.launch(SupervisorJob() +  Dispatchers.IO) {
                 getDatabase(context)
             }
         }

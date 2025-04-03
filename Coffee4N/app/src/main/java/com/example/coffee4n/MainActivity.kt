@@ -19,7 +19,6 @@ import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.ui.theme.Coffee4NTheme
 
 class MainActivity : ComponentActivity() {
-    val cloudName : String = "dizp8jtoi"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -31,6 +30,7 @@ class MainActivity : ComponentActivity() {
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         val isFirstTime = prefs.getBoolean("isFirstTime", true)
         val authToken = prefs.getString("authToken", null)
+        val userRole = prefs.getString("userRole", "customer")
         val startDestination = if (isFirstTime) {
             Destinations.WELCOME
         } else if (authToken != null) {
@@ -43,17 +43,12 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                 ) {
-//                    Text("Chao")
 //                    AppNavHost(startDestination = startDestination)
-                    OwnerNavHost(startDestination = Destinations.OWNER_PRODUCTS)
-//                    AppNavHost(startDestination = Destinations.HOME)
+//                    OwnerNavHost(startDestination = Destinations.OWNER_PRODUCTS)
+                    AppNavHost(startDestination = Destinations.HOME)
                 }
             }
         }
     }
 
-    private fun initCloudinary() {
-        val config = hashMapOf("cloud_name" to cloudName)
-        MediaManager.init(this, config)
-    }
 }
