@@ -8,6 +8,7 @@ object Destinations {
     const val FAVORITES = "favorites"
     const val CART = "cart"
     const val NOTIFICATIONS = "notifications"
+    const val CHECKOUT = "checkout"
 
     // Owner destinations
     const val OWNER_DASHBOARD = "owner_dashboard"

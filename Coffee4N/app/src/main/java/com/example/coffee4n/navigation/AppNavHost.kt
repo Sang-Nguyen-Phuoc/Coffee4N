@@ -45,7 +45,9 @@ fun AppNavHost(startDestination: String) {
                         selected = currentRoute == Destinations.HOME,
                         onClick = {
                             navController.navigate(Destinations.HOME) {
-                                popUpTo(navController.graph.startDestinationId)
+                                popUpTo(navController.graph.startDestinationId) {
+                                    inclusive = false
+                                }
                                 launchSingleTop = true
                             }
                         }
@@ -54,19 +56,40 @@ fun AppNavHost(startDestination: String) {
                         icon = { Icon(Icons.Default.Favorite, contentDescription = "Favorites") },
                         label = { Text("Favorites") },
                         selected = currentRoute == Destinations.FAVORITES,
-                        onClick = { navController.navigate(Destinations.FAVORITES) }
+                        onClick = {
+                            navController.navigate(Destinations.FAVORITES) {
+                                popUpTo(Destinations.HOME) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                        }
                     )
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Cart") },
                         label = { Text("Cart") },
                         selected = currentRoute == Destinations.CART,
-                        onClick = { navController.navigate(Destinations.CART) }
+                        onClick = {
+                            navController.navigate(Destinations.CART) {
+                                popUpTo(Destinations.HOME) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                        }
                     )
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.Notifications, contentDescription = "Notifications") },
                         label = { Text("Notifications") },
                         selected = currentRoute == Destinations.NOTIFICATIONS,
-                        onClick = { navController.navigate(Destinations.NOTIFICATIONS) }
+                        onClick = {
+                            navController.navigate(Destinations.NOTIFICATIONS) {
+                                popUpTo(Destinations.HOME) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                        }
                     )
                 }
             }
@@ -83,8 +106,8 @@ fun AppNavHost(startDestination: String) {
             composable(Destinations.HOME) { HomeScreen(navController) }
             composable(Destinations.FAVORITES) { FavoritesScreen(navController) }
             composable(Destinations.CART) { CartScreen(navController) }
+            composable(Destinations.CHECKOUT) { }
             composable(Destinations.NOTIFICATIONS) { NotificationsScreen(navController) }
         }
     }
 }
-
