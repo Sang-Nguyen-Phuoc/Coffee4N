@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
         val isFirstTime = prefs.getBoolean("isFirstTime", true)
         val authToken = prefs.getString("authToken", null)
         val userRole = prefs.getString("userRole", "customer")
-        val startDestination = if (!isFirstTime) {
+        val startDestination = if (isFirstTime) {
             Destinations.WELCOME
         } else if (authToken != null) {
             Destinations.HOME
