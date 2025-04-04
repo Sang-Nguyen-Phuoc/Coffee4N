@@ -1,6 +1,7 @@
 package com.example.coffee4n.navigation
 
 object Destinations {
+    const val BOOKING_TABLE = "booking_table"
     const val WELCOME = "welcome"
     const val LOGIN = "login"
     const val SIGNUP = "signup"

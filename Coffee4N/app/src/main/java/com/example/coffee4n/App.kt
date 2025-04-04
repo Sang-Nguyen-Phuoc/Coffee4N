@@ -18,10 +18,10 @@ class App : Application() {
         super.onCreate()
         // Any other app initialization can go here
         // Optional: Pre-initialize the database on a background thread
-        val applicationScope = CoroutineScope(SupervisorJob() +  Dispatchers.IO)
-        applicationScope.launch {
-            database // Trigger lazy initialization
-        }
+//        val applicationScope = CoroutineScope(SupervisorJob() +  Dispatchers.IO)
+//        applicationScope.launch {
+//            database // Trigger lazy initialization
+//        }
         initCloudinary(this)
     }
 }
