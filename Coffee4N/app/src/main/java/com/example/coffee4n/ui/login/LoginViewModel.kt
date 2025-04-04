@@ -27,15 +27,20 @@ class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
 
     fun login() {
         viewModelScope.launch {
-            _loginState.value = LoginState.Loading
-            val token = userRepository.login(email.value, password.value)
-            _loginState.value = if (token != null) {
-                LoginState.Success(token)
-            } else {
-                LoginState.Error("Invalid credentials")
+            try {
+                _loginState.value = LoginState.Loading
+                val userId = userRepository.login(_email.value, _password.value)
+                _loginState.value = if (userId != null) {
+                    LoginState.Success(userId)
+                } else {
+                    LoginState.Error("Invalid email or password")
+                }
+            } catch (e: Exception) {
+                _loginState.value = LoginState.Error(e.message ?: "Login failed")
             }
         }
     }
+
 
     fun resetLoginState() {
         _loginState.value = LoginState.Idle

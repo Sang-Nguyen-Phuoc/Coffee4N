@@ -16,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +38,7 @@ import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +46,7 @@ fun LoginScreen(navController: NavController) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope() // Coroutine scope cho toàn màn hình
 
     // Khởi tạo ViewModel với dependencies
     val userDao = AppDatabase.getDatabase(context).userDao()
@@ -65,12 +68,12 @@ fun LoginScreen(navController: NavController) {
     // Password visibility toggle
     var passwordVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(loginState) {
-        when (loginState.value) {
+    // Xử lý hiệu ứng phụ từ loginState
+    LaunchedEffect(loginState.value) {
+        when (val state = loginState.value) {
             is LoginState.Success -> {
                 with(prefs.edit()) {
-                    putString("authToken", (loginState.value as LoginState.Success).token)
-                    putBoolean("isFirstTime", false)
+                    putInt("userId", state.userId) // Lưu ID số nguyên
                     apply()
                 }
                 navController.navigate(Destinations.HOME) {
@@ -79,147 +82,170 @@ fun LoginScreen(navController: NavController) {
                 viewModel.resetLoginState()
             }
             is LoginState.Error -> {
-                snackbarHostState.showSnackbar((loginState.value as LoginState.Error).message)
+                // Sử dụng withContext để đảm bảo Snackbar được hiển thị
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    snackbarHostState.showSnackbar(
+                        message = state.message,
+                        duration = SnackbarDuration.Short
+                    )
+                }
             }
             else -> {}
         }
     }
-        Box(
-            modifier = Modifier.fillMaxSize().background(Color.White)
+
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.White)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
         ) {
-            Column(
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(
+                    Icons.Default.ArrowBackIosNew,
+                    contentDescription = "Back",
+                    tint = Color.Black
+                )
+            }
+            Spacer(modifier = Modifier.height(88.dp))
+            Text(
+                "Welcome back! Glad to see you, Again!",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold, // Chữ in đậm
+                color = Color.Black // Màu chữ đen
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            TextField(
+                value = email.value,
+                onValueChange = viewModel::onEmailChange,
+                label = { Text("Enter your email", color = Color.Gray) }, // Placeholder màu xám
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp)) // Bo góc tròn
+                    .background(Color(0xFFF5F5F5)), // Màu nền xám nhạt
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Transparent, // Ẩn đường viền khi focus
+                    unfocusedIndicatorColor = Color.Transparent, // Ẩn đường viền khi không focus
+                    focusedContainerColor = Color(0xFFF5F5F5), // Nền khi focus
+                    unfocusedContainerColor = Color(0xFFF5F5F5) // Nền khi không focus
+                ),
+                textStyle = TextStyle(fontSize = 20.sp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            TextField(
+                value = password.value,
+                onValueChange = viewModel::onPasswordChange,
+                label = { Text("Enter your password", color = Color.Gray) }, // Placeholder màu xám
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = "Toggle password visibility",
+                            tint = Color.Gray // Màu xám cho icon mắt
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp)) // Bo góc tròn
+                    .background(Color(0xFFF5F5F5)), // Màu nền xám nhạt
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Transparent, // Ẩn đường viền khi focus
+                    unfocusedIndicatorColor = Color.Transparent, // Ẩn đường viền khi không focus
+                    focusedContainerColor = Color(0xFFF5F5F5), // Nền khi focus
+                    unfocusedContainerColor = Color(0xFFF5F5F5) // Nền khi không focus
+                ),
+                textStyle = TextStyle(fontSize = 20.sp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(
+                onClick = { /* Navigate to Forgot Password screen if implemented */ },
+                modifier = Modifier.align(Alignment.End)
             ) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(
-                        Icons.Default.ArrowBackIosNew,
-                        contentDescription = "Back",
-                        tint = Color.Black
-                    )
-                }
-                Spacer(modifier = Modifier.height(88.dp))
-                Text(
-                    "Welcome back! Glad to see you, Again!",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold, // Chữ in đậm
-                    color = Color.Black // Màu chữ đen
-                )
-                Spacer(modifier = Modifier.height(32.dp))
-                TextField(
-                    value = email.value,
-                    onValueChange = viewModel::onEmailChange,
-                    label = { Text("Enter your email", color = Color.Gray) }, // Placeholder màu xám
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp)) // Bo góc tròn
-                        .background(Color(0xFFF5F5F5)), // Màu nền xám nhạt
-                    colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = Color.Transparent, // Ẩn đường viền khi focus
-                        unfocusedIndicatorColor = Color.Transparent, // Ẩn đường viền khi không focus
-                        focusedContainerColor = Color(0xFFF5F5F5), // Nền khi focus
-                        unfocusedContainerColor = Color(0xFFF5F5F5) // Nền khi không focus
-                    ),
-                    textStyle = TextStyle(fontSize = 20.sp)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                TextField(
-                    value = password.value,
-                    onValueChange = viewModel::onPasswordChange,
-                    label = { Text("Enter your password", color = Color.Gray) }, // Placeholder màu xám
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = "Toggle password visibility",
-                                tint = Color.Gray // Màu xám cho icon mắt
-                            )
+                Text("Forgot Password?", color = Color.DarkGray) // Màu xám đậm cho link
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = {
+                    if (email.value.isBlank() || password.value.isBlank()) {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Please enter email and password")
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp)) // Bo góc tròn
-                        .background(Color(0xFFF5F5F5)), // Màu nền xám nhạt
-                    colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = Color.Transparent, // Ẩn đường viền khi focus
-                        unfocusedIndicatorColor = Color.Transparent, // Ẩn đường viền khi không focus
-                        focusedContainerColor = Color(0xFFF5F5F5), // Nền khi focus
-                        unfocusedContainerColor = Color(0xFFF5F5F5) // Nền khi không focus
-                    ),
-                    textStyle = TextStyle(fontSize = 20.sp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                TextButton(
-                    onClick = { /* Navigate to Forgot Password screen if implemented */ },
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Forgot Password?", color = Color.DarkGray) // Màu xám đậm cho link
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = viewModel::login,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .clip(RoundedCornerShape(8.dp)), // Bo góc tròn
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary // Nút màu đen
-                    ),
-                    enabled = loginState.value !is LoginState.Loading
-                ) {
-                    if (loginState.value is LoginState.Loading) {
-                        CircularProgressIndicator(color = Color.White) // Vòng tròn loading màu trắng
                     } else {
-                        Text("Login", color = Color.White) // Chữ trắng trên nút
+                        viewModel.login()
                     }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Or Login with",
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                    color = Color.Gray // Màu xám cho văn bản
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    IconButton(onClick = { /* Handle Facebook login */ }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_facebook),
-                            contentDescription = "Facebook Login",
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                    IconButton(onClick = { /* Handle Google login */ }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_google),
-                            contentDescription = "Google Login",
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                    IconButton(onClick = { /* Handle Apple login */ }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_apple),
-                            contentDescription = "Apple Login",
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                TextButton(
-                    onClick = { navController.navigate(Destinations.SIGNUP) },
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    Text(
-                        "Don't have an account? ",
-                        color = MaterialTheme.colorScheme.primary // Màu chính (teal) cho link
-                    )
-                    Text("Register Now",
-                        color = MaterialTheme.colorScheme.tertiary)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                enabled = loginState.value !is LoginState.Loading
+            ) {
+                if (loginState.value is LoginState.Loading) {
+                    CircularProgressIndicator(color = Color.White)
+                } else {
+                    Text("Login", color = Color.White)
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Or Login with",
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                color = Color.Gray // Màu xám cho văn bản
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                IconButton(onClick = { /* Handle Facebook login */ }) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_facebook),
+                        contentDescription = "Facebook Login",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+                IconButton(onClick = { /* Handle Google login */ }) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_google),
+                        contentDescription = "Google Login",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+                IconButton(onClick = { /* Handle Apple login */ }) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_apple),
+                        contentDescription = "Apple Login",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            TextButton(
+                onClick = { navController.navigate(Destinations.SIGNUP) },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text(
+                    "Don't have an account? ",
+                    color = MaterialTheme.colorScheme.primary // Màu chính (teal) cho link
+                )
+                Text("Register Now",
+                    color = MaterialTheme.colorScheme.tertiary)
+            }
         }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp)
+        )
+
+    }
 }

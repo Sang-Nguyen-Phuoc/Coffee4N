@@ -46,14 +46,15 @@ class SignupViewModel(private val userRepository: UserRepository) : ViewModel() 
         }
         viewModelScope.launch {
             _signupState.value = SignupState.Loading
-            val token = userRepository.register(email.value, password.value, username.value)
-            _signupState.value = if (token != null) {
-                SignupState.Success(token)
+            val userId = userRepository.register(email.value, password.value, username.value)
+            _signupState.value = if (userId != null) {
+                SignupState.Success(userId)
             } else {
                 SignupState.Error("Signup failed")
             }
         }
     }
+
 
     fun resetSignupState() {
         _signupState.value = SignupState.Idle
@@ -63,6 +64,7 @@ class SignupViewModel(private val userRepository: UserRepository) : ViewModel() 
 sealed class SignupState {
     object Idle : SignupState()
     object Loading : SignupState()
-    data class Success(val token: String) : SignupState()
+    data class Success(val userId: Int) : SignupState() // Thêm userId
     data class Error(val message: String) : SignupState()
 }
+

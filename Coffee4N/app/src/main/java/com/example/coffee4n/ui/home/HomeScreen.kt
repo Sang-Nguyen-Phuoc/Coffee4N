@@ -56,6 +56,8 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun HomeScreen(navController: NavController) {
     val context = LocalContext.current
+    AppDatabase.logDatabaseInfo(context)
+
     val viewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
