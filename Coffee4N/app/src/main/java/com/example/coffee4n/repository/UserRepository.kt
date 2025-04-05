@@ -1,18 +1,28 @@
 package com.example.coffee4n.repository
 
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.example.coffee4n.model.User
 import com.example.coffee4n.model.database.UserDao
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.MutableData
+import com.google.firebase.database.Transaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
+import kotlin.coroutines.resumeWithException
 
 class UserRepository(
     private val userDao: UserDao,
     private val firebaseAuth: FirebaseAuth,
     private val firebaseDatabase: FirebaseDatabase
 ) {
+    private val lastUserIdRef = firebaseDatabase.getReference("metadata/lastUserId")
+    private val usersRef = firebaseDatabase.getReference("users")
+
     suspend fun getUserById(userId: Int): User? = userDao.getUserById(userId)
 
     suspend fun syncUserFromRemote(userId: Int) {
@@ -35,37 +45,72 @@ class UserRepository(
         emit(userDao.getUserById(userId))
     }
 
-    suspend fun register(email: String, password: String, username: String): String? {
+    // Đăng ký user mới
+    suspend fun register(email: String, password: String, username: String): Int? {
         return try {
             val authResult = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             val firebaseUser = authResult.user
             if (firebaseUser != null) {
+                val userId = getNextUserId()
                 val user = User(
-                    id = firebaseUser.uid.hashCode(),
+                    id = userId,
+                    firebaseUid = firebaseUser.uid,
                     username = username,
                     email = email,
                     phone = "",
                     name = "",
                     address = ""
                 )
-                firebaseDatabase.getReference("users").child(firebaseUser.uid).setValue(user).await()
+
+                // Lưu vào Firebase theo ID số nguyên
+                usersRef.child(userId.toString()).setValue(user).await()
                 userDao.insertUser(user)
-                firebaseUser.uid
+                userId
             } else null
         } catch (e: Exception) {
             null
         }
     }
 
-    suspend fun login(email: String, password: String): String? {
+
+    // Đăng nhập và trả về ID số nguyên
+    suspend fun login(email: String, password: String): Int? {
         return try {
             val authResult = firebaseAuth.signInWithEmailAndPassword(email, password).await()
-            authResult.user?.uid
+            val firebaseUser = authResult.user
+
+            firebaseUser?.let { fu ->
+                val snapshot = usersRef.orderByChild("firebaseUid").equalTo(fu.uid).get().await()
+
+                snapshot.children.firstOrNull()?.let { child ->
+                    val remoteUser = child.getValue(User::class.java)
+                    remoteUser?.let { user ->
+                        // Kiểm tra user đã tồn tại trong local DB chưa
+                        val localUser = userDao.getUserById(user.id)
+
+                        if (localUser != null) {
+                            // Cập nhật các trường cần thiết từ remote sang local
+                            val updatedUser = localUser.copy(
+                                username = user.username,
+                                email = user.email,
+                                phone = user.phone,
+                                // ... các trường khác cần cập nhật
+                            )
+                            userDao.updateUser(updatedUser)
+                        } else {
+                            userDao.insertOrUpdateUser(user)
+                        }
+
+                        return user.id
+                    }
+                }
+            }
+            null
         } catch (e: Exception) {
+            Log.e("LoginError", "Login failed: ${e.message}")
             null
         }
     }
-
     suspend fun sendOTP(email: String): Boolean {
         return try {
             firebaseAuth.sendPasswordResetEmail(email).await()
@@ -90,4 +135,37 @@ class UserRepository(
             user.updatePassword(newPassword).await()
         }
     }
+
+    // Lấy ID tiếp theo tự động tăng
+    private suspend fun getNextUserId(): Int {
+        return suspendCancellableCoroutine { continuation ->
+            lastUserIdRef.runTransaction(object : Transaction.Handler {
+                override fun doTransaction(mutableData: MutableData): Transaction.Result {
+                    val lastId = mutableData.getValue(Int::class.java) ?: 0
+                    mutableData.value = lastId + 1
+                    return Transaction.success(mutableData)
+                }
+
+                override fun onComplete(error: DatabaseError?, committed: Boolean, currentData: DataSnapshot?) {
+                    if (error != null) {
+                        continuation.resumeWithException(error.toException())
+                    } else {
+                        val nextId = currentData?.getValue(Int::class.java) ?: 1
+                        continuation.resume(nextId) {}
+                    }
+                }
+            })
+        }
+    }
+    suspend fun syncUserByFirebaseUid(firebaseUid: String) {
+        val snapshot = firebaseDatabase.getReference("users")
+            .orderByChild("firebaseUid").equalTo(firebaseUid).get().await()
+
+        snapshot.children.firstOrNull()?.let { ds ->
+            val user = ds.getValue(User::class.java)
+            user?.let { userDao.insertUser(it) }
+        }
+    }
+
+
 }
