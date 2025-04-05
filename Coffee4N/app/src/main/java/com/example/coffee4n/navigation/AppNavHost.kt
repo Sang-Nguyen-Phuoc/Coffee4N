@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.outlined.TableBar
 import androidx.compose.material3.*
@@ -22,6 +23,7 @@ import com.example.coffee4n.ui.home.HomeScreen
 import com.example.coffee4n.ui.login.LoginScreen
 import com.example.coffee4n.ui.notifications.NotificationsScreen
 import com.example.coffee4n.ui.cart.CartScreen
+import com.example.coffee4n.ui.profile.ProfileScreen
 import com.example.coffee4n.ui.signup.SignupScreen
 import com.example.coffee4n.ui.welcome.WelcomeScreen
 
@@ -35,6 +37,7 @@ fun AppNavHost(startDestination: String) {
         Destinations.FAVORITES,
         Destinations.CART,
         Destinations.NOTIFICATIONS,
+        Destinations.PROFILE,
         Destinations.BOOKING_TABLE
     )
 
@@ -94,6 +97,20 @@ fun AppNavHost(startDestination: String) {
                             }
                         }
                     )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
+                        label = { Text("Profile") },
+                        selected = currentRoute == Destinations.PROFILE,
+                        onClick = {
+                            navController.navigate(Destinations.PROFILE) {
+                                popUpTo(Destinations.HOME) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+
                 }
             }
         }
@@ -111,6 +128,7 @@ fun AppNavHost(startDestination: String) {
             composable(Destinations.CART) { CartScreen(navController) }
             composable(Destinations.CHECKOUT) { }
             composable(Destinations.NOTIFICATIONS) { NotificationsScreen(navController) }
+            composable(Destinations.PROFILE) { ProfileScreen(navController) }
             composable(Destinations.BOOKING_TABLE) { BookingTableScreen(navController) }
         }
     }

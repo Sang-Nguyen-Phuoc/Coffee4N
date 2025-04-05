@@ -10,6 +10,8 @@ object Destinations {
     const val CART = "cart"
     const val NOTIFICATIONS = "notifications"
     const val CHECKOUT = "checkout"
+    const val PROFILE = "profile"
+
 
     // Owner destinations
     const val OWNER_DASHBOARD = "owner_dashboard"
