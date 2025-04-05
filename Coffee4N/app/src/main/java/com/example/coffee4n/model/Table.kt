@@ -8,5 +8,6 @@ data class Table(
     @PrimaryKey val id: Int = 0,
     val tableNumber: String = "",
     val capacity: Int = 0,
-    val status: String = "AVAILABLE" // Default to "AVAILABLE"
+    val status: String = "AVAILABLE", // Default to "AVAILABLE"
+    val imageUrl: String = ""
 )

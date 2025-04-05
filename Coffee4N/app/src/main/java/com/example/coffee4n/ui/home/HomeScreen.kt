@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -49,6 +50,7 @@ import com.example.coffee4n.R
 import com.example.coffee4n.model.Category
 import com.example.coffee4n.model.Product
 import com.example.coffee4n.model.database.AppDatabase
+import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.ProductRepository
 import kotlinx.coroutines.flow.StateFlow
 
@@ -182,6 +184,28 @@ fun HomeScreen(navController: NavController) {
                     )
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Booking Table Button
+        Button(
+            onClick = { navController.navigate(Destinations.BOOKING_TABLE) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .shadow(8.dp, RoundedCornerShape(12.dp)),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFD4A373),
+                contentColor = Color.White
+            )
+        ) {
+            Text(
+                "Book a Table",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
