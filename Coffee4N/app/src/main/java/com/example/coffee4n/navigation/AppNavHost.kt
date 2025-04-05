@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.outlined.TableBar
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.coffee4n.ui.booking_table.BookingTableScreen
 import com.example.coffee4n.ui.favorites.FavoritesScreen
 import com.example.coffee4n.ui.home.HomeScreen
 import com.example.coffee4n.ui.login.LoginScreen
@@ -35,7 +37,8 @@ fun AppNavHost(startDestination: String) {
         Destinations.FAVORITES,
         Destinations.CART,
         Destinations.NOTIFICATIONS,
-        Destinations.PROFILE
+        Destinations.PROFILE,
+        Destinations.BOOKING_TABLE
     )
 
     Scaffold(
@@ -126,6 +129,7 @@ fun AppNavHost(startDestination: String) {
             composable(Destinations.CHECKOUT) { }
             composable(Destinations.NOTIFICATIONS) { NotificationsScreen(navController) }
             composable(Destinations.PROFILE) { ProfileScreen(navController) }
+            composable(Destinations.BOOKING_TABLE) { BookingTableScreen(navController) }
         }
     }
 }

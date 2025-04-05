@@ -1,72 +1,94 @@
 package com.example.coffee4n.repository
 
+import android.util.Log
 import com.google.firebase.database.FirebaseDatabase
+import com.example.coffee4n.model.BookingTable
 import com.example.coffee4n.model.Table
-import com.example.coffee4n.model.database.TableDao
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.tasks.await
 
 class TableRepository(
-    private val tableDao: TableDao,
     private val firebaseDatabase: FirebaseDatabase
 ) {
-    private suspend fun syncTablesFromRemote() {
-        val snapshot = firebaseDatabase.getReference("tables").get().await()
-        val remoteTables = snapshot.children.mapNotNull { it.getValue(Table::class.java) }
-        val localTables = tableDao.getAllTables()
+    private val tablesRef = firebaseDatabase.getReference("tables")
+    private val bookingTablesRef = firebaseDatabase.getReference("bookingTables")
 
-        remoteTables.forEach { remoteTable ->
-            // Check if the remote table's ID conflicts with a local table
-            val localTableWithSameId = localTables.find { it.id == remoteTable.id }
-            if (localTableWithSameId == null) {
-                // No conflict, insert the remote table
-                tableDao.insertTable(remoteTable)
-            } else {
-                // Conflict: Skip or handle (e.g., update the local table with remote data)
-                // For simplicity, let's skip the remote table if its ID is already in use
-                println("ID conflict: Skipping remote table with ID ${remoteTable.id}")
-            }
-        }
-    }
-
+    // Quản lý Table
     suspend fun addTable(table: Table) {
-        firebaseDatabase.getReference("tables").child(table.id.toString()).setValue(table).await()
+        tablesRef.child(table.id.toString()).setValue(table).await()
     }
 
     suspend fun deleteTable(id: Int) {
-        firebaseDatabase.getReference("tables").child(id.toString()).removeValue().await()
+        tablesRef.child(id.toString()).removeValue().await()
     }
 
     fun getTablesFlow(): Flow<List<Table>> = callbackFlow {
-        val reference = firebaseDatabase.getReference("tables")
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val tables = snapshot.children.mapNotNull { it.getValue(Table::class.java) }
-                trySend(tables).isSuccess // Emit the list of tables
+                trySend(tables).isSuccess
             }
 
             override fun onCancelled(error: DatabaseError) {
-                close(error.toException()) // Close the Flow on error
+                close(error.toException())
             }
         }
+        tablesRef.addValueEventListener(listener)
+        awaitClose { tablesRef.removeEventListener(listener) }
+    }
 
-        reference.addValueEventListener(listener)
+    suspend fun getMaxTableId(): Int {
+        val snapshot = tablesRef.get().await()
+        val remoteTables = snapshot.children.mapNotNull { it.getValue(Table::class.java) }
+        return remoteTables.maxByOrNull { it.id }?.id ?: 0
+    }
 
-        awaitClose {
-            reference.removeEventListener(listener) // Clean up the listener when the Flow is closed
+    // Quản lý BookingTable
+    suspend fun addBookingTable(bookingTable: BookingTable) {
+        // Lấy id lớn nhất hiện có và tăng lên 1
+        val maxId = getMaxBookingTableId()
+        val newId = maxId + 1
+        val bookingWithId = bookingTable.copy(id = newId)
+
+        // Sử dụng id làm key trong Firebase
+        bookingTablesRef.child(newId.toString()).setValue(bookingWithId).await()
+    }
+
+    fun getBookingTablesFlow(): Flow<List<BookingTable>> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val bookingTables = snapshot.children.mapNotNull { it.getValue(BookingTable::class.java) }
+                trySend(bookingTables).isSuccess
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        bookingTablesRef.addValueEventListener(listener)
+        awaitClose { bookingTablesRef.removeEventListener(listener) }
+    }
+
+    suspend fun deleteBookingTable(id: Int) {
+        bookingTablesRef.child(id.toString()).removeValue().await()
+    }
+
+    suspend fun updateBookingTable(bookingTable: BookingTable) {
+        if (bookingTable.id <= 0) {
+            throw IllegalArgumentException("BookingTable must have a valid ID (greater than 0) to be updated")
+        } else {
+            bookingTablesRef.child(bookingTable.id.toString()).setValue(bookingTable).await()
         }
     }
 
-    // New method to get the maximum ID from both Room and Firebase
-    suspend fun getMaxTableId(): Int {
-        val snapshot = firebaseDatabase.getReference("tables").get().await()
-        val remoteTables = snapshot.children.mapNotNull { it.getValue(Table::class.java) }
-        return remoteTables.maxByOrNull { it.id }?.id ?: 0
+    suspend fun getMaxBookingTableId(): Int {
+        val snapshot = bookingTablesRef.get().await()
+        val remoteBookings = snapshot.children.mapNotNull { it.getValue(BookingTable::class.java) }
+        return remoteBookings.maxByOrNull { it.id }?.id ?: 0
     }
 }
