@@ -1,5 +1,6 @@
 package com.example.coffee4n.navigation
 
+import android.content.Context
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -11,7 +12,12 @@ import androidx.compose.material.icons.outlined.TableBar
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -40,6 +46,10 @@ fun AppNavHost(startDestination: String) {
         Destinations.PROFILE,
         Destinations.BOOKING_TABLE
     )
+
+    val context = LocalContext.current
+
+    var showLoginDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         bottomBar = {
@@ -76,11 +86,18 @@ fun AppNavHost(startDestination: String) {
                         label = { Text("Cart") },
                         selected = currentRoute == Destinations.CART,
                         onClick = {
-                            navController.navigate(Destinations.CART) {
-                                popUpTo(Destinations.HOME) {
-                                    inclusive = false
+                            val userId = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                                .getInt("userId", 0)
+                            println("Navigating to Cart with userId: $userId")
+                            if (userId != 0) {
+                                navController.navigate(Destinations.CART) { // Bỏ userId khỏi route
+                                    popUpTo(Destinations.HOME) {
+                                        inclusive = false
+                                    }
+                                    launchSingleTop = true
                                 }
-                                launchSingleTop = true
+                            } else {
+                                showLoginDialog = true
                             }
                         }
                     )
@@ -110,7 +127,6 @@ fun AppNavHost(startDestination: String) {
                             }
                         }
                     )
-
                 }
             }
         }
@@ -125,11 +141,34 @@ fun AppNavHost(startDestination: String) {
             composable(Destinations.SIGNUP) { SignupScreen(navController) }
             composable(Destinations.HOME) { HomeScreen(navController) }
             composable(Destinations.FAVORITES) { FavoritesScreen(navController) }
-            composable(Destinations.CART) { CartScreen(navController) }
+            composable(Destinations.CART) { // Bỏ userId khỏi route
+                CartScreen(navController = navController)
+            }
             composable(Destinations.CHECKOUT) { }
             composable(Destinations.NOTIFICATIONS) { NotificationsScreen(navController) }
             composable(Destinations.PROFILE) { ProfileScreen(navController) }
             composable(Destinations.BOOKING_TABLE) { BookingTableScreen(navController) }
+        }
+
+        if (showLoginDialog) {
+            AlertDialog(
+                onDismissRequest = { showLoginDialog = false },
+                title = { Text("Login Required") },
+                text = { Text("Login to view cart") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        navController.navigate(Destinations.LOGIN)
+                        showLoginDialog = false
+                    }) {
+                        Text("Yes")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLoginDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }

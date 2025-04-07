@@ -12,11 +12,16 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.lifecycleScope
 import com.cloudinary.android.MediaManager
+import com.example.coffee4n.model.CartItem
 import com.example.coffee4n.navigation.AppNavHost
 import com.example.coffee4n.navigation.OwnerNavHost
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.ui.theme.Coffee4NTheme
+import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,5 +56,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
 }

@@ -1,8 +1,8 @@
 package com.example.coffee4n.ui.cart
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,135 +22,193 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.navigation.Destinations
-import com.example.coffee4n.repository.CartRepository
+import com.example.coffee4n.repository.CartItemRepository
+import com.example.coffee4n.repository.ProductRepository
 import com.google.firebase.database.FirebaseDatabase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CartScreen(navController: NavController? = null) {
-    val viewModel: CartViewModel = viewModel(
-        factory = CartViewModelFactory(CartRepository(FirebaseDatabase.getInstance()))
-    )
-    val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+fun CartScreen(navController: NavController) {
+    val context = LocalContext.current
+    val userId = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        .getInt("userId", 0)
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            "YOUR CART",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = { navController?.popBackStack() },
-                        modifier = Modifier
-                            .padding(start = 16.dp)
-                            .size(40.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.Black,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color.Black,
-                    navigationIconContentColor = Color.Black
-                ),
-                modifier = Modifier
-                    .shadow(4.dp)
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color(0xFFF8F1E9) // Màu nền ấm áp, sang trọng
-    ) { paddingValues ->
-        when {
-            state.isLoading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(
-                        color = Color(0xFFD4A373), // Màu nâu vàng sang trọng
-                        strokeWidth = 4.dp
-                    )
-                }
-            }
-            state.error != null -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        state.error!!,
-                        color = Color(0xFFE57373),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-            else -> {
-                Column(
-                    modifier = Modifier
-                        .padding(paddingValues)
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .fillMaxSize()
+    if (userId == 0) {
+        // Nếu userId = 0, hiển thị thông báo yêu cầu đăng nhập
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Please login to view your cart",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { navController.navigate(Destinations.LOGIN) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD4A373))
                 ) {
-                    LazyColumn(modifier = Modifier.weight(1f)) {
-                        items(state.cartItems) { item ->
-                            CartItemCard(
-                                item = item,
-                                onUpdateQuantity = { newQty -> viewModel.updateQuantity(item.product.id, newQty) },
-                                onRemove = { viewModel.removeItem(item.product.id) },
-                                isOutOfStock = state.outOfStockItems.contains(item.product.id)
-                            )
-                        }
-                    }
-                    SummaryCard(state.itemTotal, state.tax, state.total)
-                    Button(
-                        onClick = { navController?.navigate(Destinations.CHECKOUT) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp, bottom = 12.dp)
-                            .height(56.dp)
-                            .shadow(8.dp, RoundedCornerShape(16.dp)),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFD4A373),
-                            disabledContainerColor = Color(0xFFB0BEC5)
-                        ),
-                        enabled = state.cartItems.isNotEmpty() && state.outOfStockItems.isEmpty()
-                    ) {
-                        Text(
-                            "Proceed to Checkout",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Text(
+                        text = "Login",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
+    } else {
+        // Nếu có userId, hiển thị giỏ hàng
+        val cartItemRepository = CartItemRepository(
+            cartItemDao = AppDatabase.getDatabase(context).cartItemDao(),
+            firebaseDatabase = FirebaseDatabase.getInstance()
+        )
+        val productRepository = ProductRepository(FirebaseDatabase.getInstance())
+        val viewModel: CartViewModel = viewModel(
+            factory = CartViewModelFactory(cartItemRepository, productRepository, userId)
+        )
+        val state by viewModel.state.collectAsState()
+        val snackbarHostState = remember { SnackbarHostState() }
 
-        state.successMessage?.let { message ->
-            LaunchedEffect(message) {
-                snackbarHostState.showSnackbar(message)
+        Scaffold(
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                "YOUR CART",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = { navController.popBackStack() },
+                            modifier = Modifier
+                                .padding(start = 16.dp)
+                                .size(40.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.Black,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color.White,
+                        titleContentColor = Color.Black,
+                        navigationIconContentColor = Color.Black
+                    ),
+                    modifier = Modifier
+                        .shadow(4.dp)
+                )
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            containerColor = Color(0xFFF8F1E9)
+        ) { paddingValues ->
+            when {
+                state.isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(
+                            color = Color(0xFFD4A373),
+                            strokeWidth = 4.dp
+                        )
+                    }
+                }
+                state.error != null -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            state.error!!,
+                            color = Color(0xFFE57373),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+                else -> {
+                    Column(
+                        modifier = Modifier
+                            .padding(paddingValues)
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                            .fillMaxSize()
+                    ) {
+                        if (state.cartItems.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .weight(1f),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Your cart is empty",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.Gray
+                                )
+                            }
+                        } else {
+                            LazyColumn(modifier = Modifier.weight(1f)) {
+                                items(state.cartItems) { item ->
+                                    CartItemCard(
+                                        item = item,
+                                        onUpdateQuantity = { newQty -> viewModel.updateQuantity(item, newQty) },
+                                        onRemove = { viewModel.removeItem(item) },
+                                        isOutOfStock = state.outOfStockItems.contains(item.product.id)
+                                    )
+                                }
+                            }
+                            SummaryCard(state.itemTotal, state.tax, state.total)
+                            Button(
+                                onClick = { navController.navigate(Destinations.CHECKOUT) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp, bottom = 12.dp)
+                                    .height(56.dp)
+                                    .shadow(8.dp, RoundedCornerShape(16.dp)),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFD4A373),
+                                    disabledContainerColor = Color(0xFFB0BEC5)
+                                ),
+                                enabled = state.cartItems.isNotEmpty() && state.outOfStockItems.isEmpty()
+                            ) {
+                                Text(
+                                    "Proceed to Checkout",
+                                    color = Color.White,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            state.successMessage?.let { message ->
+                LaunchedEffect(message) {
+                    snackbarHostState.showSnackbar(message)
+                }
             }
         }
     }
@@ -158,7 +216,7 @@ fun CartScreen(navController: NavController? = null) {
 
 @Composable
 fun CartItemCard(
-    item: CartItem,
+    item: CartItemWithProduct,
     onUpdateQuantity: (Int) -> Unit,
     onRemove: () -> Unit,
     isOutOfStock: Boolean
@@ -176,7 +234,6 @@ fun CartItemCard(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            // Hình ảnh làm nền
             Image(
                 painter = rememberAsyncImagePainter(
                     model = item.product.imageUrl.ifEmpty { "https://fastly.picsum.photos/id/1011/200/200.jpg?hmac=ISwJXaLKDOtBGE_n3myoHUev_P_OH3zpWqLx0yHp0pY" }
@@ -188,15 +245,13 @@ fun CartItemCard(
                 contentScale = ContentScale.Crop
             )
 
-
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f)) // Lớp phủ đen mờ
+                    .background(Color.Black.copy(alpha = 0.3f))
                     .clip(RoundedCornerShape(16.dp))
             )
 
-            // Nội dung trên hình ảnh
             Row(
                 modifier = Modifier
                     .fillMaxSize()
@@ -212,7 +267,7 @@ fun CartItemCard(
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                         maxLines = 2,
-                        color = Color.White // Màu trắng để nổi bật trên nền mờ
+                        color = Color.White
                     )
                     if (isOutOfStock) {
                         Text(
@@ -226,11 +281,11 @@ fun CartItemCard(
                             Text(
                                 "$${item.product.price}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.7f), // Màu trắng mờ
+                                color = Color.White.copy(alpha = 0.7f),
                                 fontSize = 14.sp
                             )
                             Text(
-                                "$${"%.2f".format(item.product.price * item.quantity)}",
+                                "$${"%.2f".format(item.product.price * item.cartItem.quantity)}",
                                 color = Color(0xFFD4A373),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp
@@ -245,10 +300,10 @@ fun CartItemCard(
                     QuantityButton(
                         text = "-",
                         enabled = !isOutOfStock,
-                        onClick = { onUpdateQuantity(item.quantity - 1) }
+                        onClick = { onUpdateQuantity(item.cartItem.quantity - 1) }
                     )
                     Text(
-                        "${item.quantity}",
+                        "${item.cartItem.quantity}",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
@@ -256,7 +311,7 @@ fun CartItemCard(
                     QuantityButton(
                         text = "+",
                         enabled = !isOutOfStock,
-                        onClick = { onUpdateQuantity(item.quantity + 1) }
+                        onClick = { onUpdateQuantity(item.cartItem.quantity + 1) }
                     )
                     IconButton(
                         onClick = onRemove,
@@ -276,6 +331,7 @@ fun CartItemCard(
         }
     }
 }
+
 @Composable
 fun QuantityButton(text: String, enabled: Boolean, onClick: () -> Unit) {
     Box(
