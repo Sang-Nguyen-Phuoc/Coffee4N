@@ -23,20 +23,20 @@ class CartRepository(private val firebaseDatabase: FirebaseDatabase) {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                // Xử lý lỗi nếu cần
+                // Handle error if needed
             }
         })
     }
 
-    private val cartRef = firebaseDatabase.getReference("carts")
+    private val cartRef = firebaseDatabase.getReference("cartitems")
     private val lastCartItemIdRef = firebaseDatabase.getReference("metadata/lastCartItemId")
 
     fun getCartItemsFlow(userId: Int): Flow<List<CartItem>> = callbackFlow {
-        val userCartRef = cartRef.child(userId.toString())
-
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val cartItems = snapshot.children.mapNotNull { it.getValue(CartItem::class.java) }
+                val cartItems = snapshot.children.mapNotNull {
+                    it.getValue(CartItem::class.java)?.takeIf { item -> item.userId == userId }
+                }
                 trySend(cartItems).isSuccess
             }
 
@@ -45,48 +45,63 @@ class CartRepository(private val firebaseDatabase: FirebaseDatabase) {
             }
         }
 
-        userCartRef.addValueEventListener(listener)
-        awaitClose { userCartRef.removeEventListener(listener) }
+        cartRef.addValueEventListener(listener)
+        awaitClose { cartRef.removeEventListener(listener) }
     }
 
     suspend fun addToCart(userId: Int, cartItem: CartItem) {
         // Check if the product already exists in the cart
-        val userCartRef = cartRef.child(userId.toString())
-        val snapshot = userCartRef.get().await()
+        val snapshot = cartRef.get().await()
 
         val existingCartItem = snapshot.children.mapNotNull {
             it.getValue(CartItem::class.java)
-        }.find { it.productId == cartItem.productId }
+        }.find { it.productId == cartItem.productId && it.userId == userId }
 
         if (existingCartItem != null) {
             // Update quantity
             val updatedCartItem = existingCartItem.copy(quantity = existingCartItem.quantity + cartItem.quantity)
-            userCartRef.child(existingCartItem.id.toString()).setValue(updatedCartItem).await()
+            cartRef.child(existingCartItem.id.toString()).setValue(updatedCartItem).await()
         } else {
-            // Add new item
+            // Add new item with only the essential fields
             val newItemId = getNextCartItemId()
-            val newCartItem = cartItem.copy(id = newItemId)
-            userCartRef.child(newItemId.toString()).setValue(newCartItem).await()
+            val simpleCartItem = CartItem(
+                id = newItemId,
+                userId = userId,
+                productId = cartItem.productId,
+                quantity = cartItem.quantity,
+            )
+            cartRef.child(newItemId.toString()).setValue(simpleCartItem).await()
         }
     }
 
     suspend fun updateCartItemQuantity(userId: Int, cartItemId: Int, quantity: Int) {
-        val userCartRef = cartRef.child(userId.toString())
-        val snapshot = userCartRef.child(cartItemId.toString()).get().await()
+        val snapshot = cartRef.child(cartItemId.toString()).get().await()
         val cartItem = snapshot.getValue(CartItem::class.java)
 
-        if (cartItem != null) {
+        if (cartItem != null && cartItem.userId == userId) {
             val updatedCartItem = cartItem.copy(quantity = quantity)
-            userCartRef.child(cartItemId.toString()).setValue(updatedCartItem).await()
+            cartRef.child(cartItemId.toString()).setValue(updatedCartItem).await()
         }
     }
 
     suspend fun removeCartItem(userId: Int, cartItemId: Int) {
-        cartRef.child(userId.toString()).child(cartItemId.toString()).removeValue().await()
+        val snapshot = cartRef.child(cartItemId.toString()).get().await()
+        val cartItem = snapshot.getValue(CartItem::class.java)
+
+        if (cartItem != null && cartItem.userId == userId) {
+            cartRef.child(cartItemId.toString()).removeValue().await()
+        }
     }
 
     suspend fun clearCart(userId: Int) {
-        cartRef.child(userId.toString()).removeValue().await()
+        val snapshot = cartRef.get().await()
+
+        snapshot.children.forEach { childSnapshot ->
+            val cartItem = childSnapshot.getValue(CartItem::class.java)
+            if (cartItem != null && cartItem.userId == userId) {
+                cartRef.child(childSnapshot.key!!).removeValue().await()
+            }
+        }
     }
 
     private suspend fun getNextCartItemId(): Int {
@@ -99,16 +114,15 @@ class CartRepository(private val firebaseDatabase: FirebaseDatabase) {
 
     suspend fun isProductInCart(userId: Int, productId: Int): Boolean {
         return try {
-            val snapshot = cartRef.child(userId.toString()).get().await()
+            val snapshot = cartRef.get().await()
             snapshot.children.any {
                 val cartItem = it.getValue(CartItem::class.java)
-                cartItem?.productId == productId
+                cartItem?.productId == productId && cartItem.userId == userId
             }
         } catch (e: Exception) {
             false
         }
     }
-
 
     fun getAllProductsFlow(): Flow<List<Product>> = productsFlow
 
