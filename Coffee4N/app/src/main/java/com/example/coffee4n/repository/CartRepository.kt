@@ -97,6 +97,18 @@ class CartRepository(private val firebaseDatabase: FirebaseDatabase) {
         return nextId
     }
 
+    suspend fun isProductInCart(userId: Int, productId: Int): Boolean {
+        return try {
+            val snapshot = cartRef.child(userId.toString()).get().await()
+            snapshot.children.any {
+                val cartItem = it.getValue(CartItem::class.java)
+                cartItem?.productId == productId
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
 
     fun getAllProductsFlow(): Flow<List<Product>> = productsFlow
 

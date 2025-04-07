@@ -46,7 +46,7 @@ fun LoginScreen(navController: NavController) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope() // Coroutine scope cho toàn màn hình
+    val scope = rememberCoroutineScope()
 
     // Khởi tạo ViewModel với dependencies
     val userDao = AppDatabase.getDatabase(context).userDao()
@@ -73,7 +73,9 @@ fun LoginScreen(navController: NavController) {
         when (val state = loginState.value) {
             is LoginState.Success -> {
                 with(prefs.edit()) {
-                    putInt("userId", state.userId) // Lưu ID số nguyên
+                    putInt("userId", state.userId)
+                    putString("authToken", state.authToken) // Save the auth token
+                    putBoolean("isFirstTime", false)
                     apply()
                 }
                 navController.navigate(Destinations.HOME) {
@@ -82,7 +84,6 @@ fun LoginScreen(navController: NavController) {
                 viewModel.resetLoginState()
             }
             is LoginState.Error -> {
-                // Sử dụng withContext để đảm bảo Snackbar được hiển thị
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                     snackbarHostState.showSnackbar(
                         message = state.message,

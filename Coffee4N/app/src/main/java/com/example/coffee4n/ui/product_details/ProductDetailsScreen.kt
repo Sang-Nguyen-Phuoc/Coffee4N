@@ -1,5 +1,7 @@
 package com.example.coffee4n.ui.product_details
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -47,9 +50,24 @@ fun ProductDetailsScreen(
     // Initialize the quantity state
     var quantity by remember { mutableStateOf(1) }
 
+    // Animation for the Add to Cart button
+    val addToCartScale = animateFloatAsState(
+        targetValue = if (productState.isAddingToCart) 0.9f else 1f,
+        label = "addToCartScale"
+    )
+
     // Load product details
     LaunchedEffect(productId) {
         viewModel.loadProduct(productId)
+    }
+
+    // Show snackbar for messages
+    LaunchedEffect(productState.showSnackbar) {
+        if (productState.showSnackbar) {
+            val message = productState.snackbarMessage ?: productState.error ?: "Action completed"
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearSnackbar()
+        }
     }
 
     // Check if product is loaded
@@ -61,9 +79,15 @@ fun ProductDetailsScreen(
     }
 
     // Handle error state
-    if (productState.error != null) {
+    if (productState.error != null && !productState.showSnackbar) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Error loading product: ${productState.error}")
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Error: ${productState.error}")
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = { navController.popBackStack() }) {
+                    Text("Go Back")
+                }
+            }
         }
         return
     }
@@ -77,8 +101,7 @@ fun ProductDetailsScreen(
     }
 
     // Main container without Scaffold
-    Box(modifier = Modifier.fillMaxSize().background(Color.White),
-        ) {
+    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
         // Content column with scroll
         Column(
             modifier = Modifier
@@ -137,6 +160,49 @@ fun ProductDetailsScreen(
                                 fontSize = 12.sp
                             )
                         }
+                    }
+                }
+
+                // Back button with shadow
+                IconButton(
+                    onClick = { navController.navigateUp() },
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .size(40.dp)
+                        .shadow(4.dp, CircleShape)
+                        .background(Color.White.copy(alpha = 0.9f), CircleShape)
+                        .align(Alignment.TopStart)
+                ) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.Black
+                    )
+                }
+
+                // Favorite button
+                IconButton(
+                    onClick = { viewModel.toggleFavorite(product) },
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .size(40.dp)
+                        .shadow(4.dp, CircleShape)
+                        .background(Color.White.copy(alpha = 0.9f), CircleShape)
+                        .align(Alignment.TopEnd)
+                ) {
+                    if (productState.isUpdatingFavorite) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color(52, 235, 174),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = if (productState.isFavorite) Icons.Default.Favorite
+                            else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (productState.isFavorite) Color.Red else Color.Gray
+                        )
                     }
                 }
             }
@@ -245,6 +311,22 @@ fun ProductDetailsScreen(
                             )
                         }
                     }
+
+                    // Display already in cart badge if applicable
+                    if (productState.isInCart) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            color = Color(0xFFE1F5FE),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text(
+                                text = "In Cart",
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                fontSize = 12.sp,
+                                color = Color(0xFF0288D1)
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -254,7 +336,7 @@ fun ProductDetailsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "$${product.price.toFixed(2)}",
+                        text = "$${String.format("%.2f", product.price)}",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(52, 235, 174)
@@ -314,7 +396,6 @@ fun ProductDetailsScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Use LazyColumn if there's a lot of info
                 InfoRow(
                     icon = Icons.Default.Category,
                     title = "Category",
@@ -336,55 +417,6 @@ fun ProductDetailsScreen(
             }
         }
 
-        // Top App Bar
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            color = MaterialTheme.colorScheme.primaryContainer,
-            shadowElevation = 4.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { navController.navigateUp() }) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-
-                Text(
-                    text = "Product Details",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.weight(1f)
-                )
-
-                IconButton(onClick = { viewModel.toggleFavorite(product) }) {
-                    Icon(
-                        imageVector = if (productState.isFavorite)
-                            Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Favorite",
-                        tint = if (productState.isFavorite) Color.Red else Color.Gray
-                    )
-                }
-
-                IconButton(onClick = { navController.navigate(Destinations.CART) }) {
-                    Icon(
-                        Icons.Default.ShoppingCart,
-                        contentDescription = "Cart",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-        }
-
         // Bottom Bar
         Surface(
             modifier = Modifier
@@ -402,42 +434,66 @@ fun ProductDetailsScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Price",
+                        text = "Total",
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
                     Text(
-                        text = "$${(product.price * quantity).toFixed(2)}",
+                        text = "$${String.format("%.2f", product.price * quantity)}",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(52, 235, 174)
                     )
                 }
+
+                // View Cart Button (shown only when product is already in cart)
+                AnimatedVisibility(visible = productState.isInCart) {
+                    Button(
+                        onClick = { navController.navigate(Destinations.CART) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF8BC34A)
+                        ),
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .height(50.dp)
+                    ) {
+                        Icon(Icons.Default.ShoppingCart, contentDescription = "View Cart")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("View Cart")
+                    }
+                }
+
+                // Add to Cart Button
                 Button(
                     onClick = {
-                        scope.launch {
-                            viewModel.addToCart(product, quantity)
-                            snackbarHostState.showSnackbar(
-                                "Added to cart",
-                                actionLabel = "View Cart",
-                                duration = SnackbarDuration.Short
-                            ).let {
-                                if (it == SnackbarResult.ActionPerformed) {
-                                    navController.navigate(Destinations.CART)
-                                }
-                            }
-                        }
+                        viewModel.addToCart(product, quantity)
                     },
+                    enabled = product.stockQuantity > 0 && !productState.isAddingToCart,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(52, 235, 174)
+                        containerColor = Color(52, 235, 174),
+                        disabledContainerColor = Color.Gray
                     ),
                     modifier = Modifier
                         .height(50.dp)
                         .weight(1f)
+                        .scale(addToCartScale.value)
                 ) {
-                    Icon(Icons.Default.ShoppingCart, contentDescription = "Add to Cart")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Add to Cart")
+                    if (productState.isAddingToCart) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                if (productState.isInCart) Icons.Default.Add else Icons.Default.ShoppingCart,
+                                contentDescription = "Add to Cart"
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(if (productState.isInCart) "Add More" else "Add to Cart")
+                        }
+                    }
                 }
             }
         }
@@ -450,8 +506,31 @@ fun ProductDetailsScreen(
                 .padding(bottom = 90.dp) // Position above bottom bar
         )
     }
-}
 
+    // Login Dialog
+    if (productState.showLoginDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissLoginDialog() },
+            title = { Text("Login Required") },
+            text = { Text("You need to login to add items to your cart.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.dismissLoginDialog()
+                        navController.navigate(Destinations.LOGIN)
+                    }
+                ) {
+                    Text("Login")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissLoginDialog() }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
 @Composable
 fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, value: String) {
     Row(
