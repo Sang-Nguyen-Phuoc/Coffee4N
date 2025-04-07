@@ -35,6 +35,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.coffee4n.ui.booking_table.BookingTableScreen
 import com.example.coffee4n.ui.cart.CartScreen
+import com.example.coffee4n.ui.checkout.CheckoutScreen
 import com.example.coffee4n.ui.favorites.FavoritesScreen
 import com.example.coffee4n.ui.home.HomeScreen
 import com.example.coffee4n.ui.login.LoginScreen
@@ -174,7 +175,7 @@ fun AppNavHost(startDestination: String) {
                     composable(Destinations.CART) {
                         CartScreen(navController = navController)
                     }
-                    composable(Destinations.CHECKOUT) { }
+                    composable(Destinations.CHECKOUT) { CheckoutScreen(navController) }
                     composable(Destinations.NOTIFICATIONS) { NotificationsScreen(navController) }
                     composable(Destinations.PROFILE) { ProfileScreen(navController) }
                     composable(Destinations.BOOKING_TABLE) { BookingTableScreen(navController) }

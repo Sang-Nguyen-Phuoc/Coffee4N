@@ -1,6 +1,9 @@
 package com.example.coffee4n.ui.cart
 
 import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,15 +16,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -58,12 +58,16 @@ fun CartScreen(navController: NavController) {
                     text = "Please login to view your cart",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.Gray
+                    color = Color(0xFF757575)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = { navController.navigate(Destinations.LOGIN) },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD4A373))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD4A373)),
+                    modifier = Modifier
+                        .height(48.dp)
+                        .shadow(4.dp, RoundedCornerShape(12.dp)),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
                         text = "Login",
@@ -96,7 +100,7 @@ fun CartScreen(navController: NavController) {
                                 "YOUR CART",
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.Black
+                                color = Color(0xFF3E2723)
                             )
                         }
                     },
@@ -110,25 +114,34 @@ fun CartScreen(navController: NavController) {
                             Icon(
                                 Icons.Default.ArrowBack,
                                 contentDescription = "Back",
-                                tint = Color.Black,
+                                tint = Color(0xFF3E2723),
                                 modifier = Modifier.size(24.dp)
                             )
                         }
                     },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                         containerColor = Color.White,
-                        titleContentColor = Color.Black,
-                        navigationIconContentColor = Color.Black
+                        titleContentColor = Color(0xFF3E2723),
+                        navigationIconContentColor = Color(0xFF3E2723)
                     ),
                     modifier = Modifier
                         .shadow(4.dp)
                 )
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
-            containerColor = Color(0xFFF8F1E9)
+            containerColor = Color(0xFFF5F5F5)
         ) { paddingValues ->
-            when {
-                state.isLoading -> {
+            Column(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                    .fillMaxSize()
+            ) {
+                AnimatedVisibility(
+                    visible = state.isLoading,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(
                             color = Color(0xFFD4A373),
@@ -136,70 +149,85 @@ fun CartScreen(navController: NavController) {
                         )
                     }
                 }
-                state.error != null -> {
+
+                AnimatedVisibility(
+                    visible = !state.isLoading && state.error != null,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            state.error!!,
+                            state.error ?: "An error occurred",
                             color = Color(0xFFE57373),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium
                         )
                     }
                 }
-                else -> {
-                    Column(
+
+                AnimatedVisibility(
+                    visible = !state.isLoading && state.error == null && state.cartItems.isEmpty(),
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Box(
                         modifier = Modifier
-                            .padding(paddingValues)
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
                             .fillMaxSize()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
                     ) {
-                        if (state.cartItems.isEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .weight(1f),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "Your cart is empty",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color.Gray
+                        Text(
+                            text = "Your cart is empty",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF757575)
+                        )
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = !state.isLoading && state.error == null && state.cartItems.isNotEmpty(),
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(bottom = 16.dp)
+                        ) {
+                            items(state.cartItems) { item ->
+                                CartItemCard(
+                                    item = item,
+                                    onUpdateQuantity = { newQty -> viewModel.updateQuantity(item, newQty) },
+                                    onRemove = { viewModel.removeItem(item) },
+                                    isOutOfStock = state.outOfStockItems.contains(item.product.id)
                                 )
                             }
-                        } else {
-                            LazyColumn(modifier = Modifier.weight(1f)) {
-                                items(state.cartItems) { item ->
-                                    CartItemCard(
-                                        item = item,
-                                        onUpdateQuantity = { newQty -> viewModel.updateQuantity(item, newQty) },
-                                        onRemove = { viewModel.removeItem(item) },
-                                        isOutOfStock = state.outOfStockItems.contains(item.product.id)
-                                    )
-                                }
-                            }
-                            SummaryCard(state.itemTotal, state.tax, state.total)
-                            Button(
-                                onClick = { navController.navigate(Destinations.CHECKOUT) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 16.dp, bottom = 12.dp)
-                                    .height(56.dp)
-                                    .shadow(8.dp, RoundedCornerShape(16.dp)),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFFD4A373),
-                                    disabledContainerColor = Color(0xFFB0BEC5)
-                                ),
-                                enabled = state.cartItems.isNotEmpty() && state.outOfStockItems.isEmpty()
-                            ) {
-                                Text(
-                                    "Proceed to Checkout",
-                                    color = Color.White,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
+                        }
+                        SummaryCard(state.itemTotal, state.tax, state.total)
+                        Button(
+                            onClick = { navController.navigate(Destinations.CHECKOUT) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp, bottom = 16.dp)
+                                .height(56.dp)
+                                .shadow(8.dp, RoundedCornerShape(16.dp)),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFD4A373),
+                                disabledContainerColor = Color(0xFFB0BEC5)
+                            ),
+                            enabled = state.cartItems.isNotEmpty() && state.outOfStockItems.isEmpty()
+                        ) {
+                            Text(
+                                "Proceed to Checkout",
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -231,8 +259,7 @@ fun CartItemCard(
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
             Image(
                 painter = rememberAsyncImagePainter(
@@ -359,13 +386,21 @@ fun SummaryCard(itemTotal: Double, tax: Double, total: Double) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 12.dp)
             .shadow(6.dp, RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(
             modifier = Modifier
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFFFFFFF),
+                            Color(0xFFF8F1E9)
+                        )
+                    )
+                )
                 .padding(20.dp)
                 .fillMaxWidth()
         ) {
@@ -382,7 +417,12 @@ fun SummaryCard(itemTotal: Double, tax: Double, total: Double) {
 }
 
 @Composable
-fun SummaryRow(label: String, value: Double, fontWeight: FontWeight = FontWeight.Normal, color: Color = Color(0xFF3E2723)) {
+fun SummaryRow(
+    label: String,
+    value: Double,
+    fontWeight: FontWeight = FontWeight.Normal,
+    color: Color = Color(0xFF3E2723)
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

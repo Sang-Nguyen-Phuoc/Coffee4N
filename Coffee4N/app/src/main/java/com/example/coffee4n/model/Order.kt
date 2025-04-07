@@ -12,6 +12,5 @@ data class Order(
     val status: String,
     val totalAmount: Double,
     val deliveryMethod: String,
-    val tableId: Int?,
     val promotionId: Int?
 )
