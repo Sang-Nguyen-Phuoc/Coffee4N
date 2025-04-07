@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.cloudinary.android.MediaManager
@@ -28,8 +29,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
 
+        // Make the window draw under the status bar
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        // Get the insets controller to manipulate the system bars
         val controller = WindowCompat.getInsetsController(window, window.decorView)
+
+        // Set status bar text to white (false means dark icons aren't used, so light/white icons)
         controller.isAppearanceLightStatusBars = false
 
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
