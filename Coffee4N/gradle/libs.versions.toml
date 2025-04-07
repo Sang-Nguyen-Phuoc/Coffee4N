@@ -21,6 +21,7 @@ navigationCompose = "2.7.7"
 roomCompiler = "2.6.1"
 roomKtx = "2.6.1"
 securityCrypto = "1.0.0"
+screenshotValidationJunitEngineVersion = "0.0.1-alpha09"
 
 [libraries]
 androidx-activity-compose-v190 = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
@@ -51,6 +52,7 @@ ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+screenshot-validation-junit-engine = { group = "com.android.tools.screenshot", name = "screenshot-validation-junit-engine", version.ref = "screenshotValidationJunitEngineVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
