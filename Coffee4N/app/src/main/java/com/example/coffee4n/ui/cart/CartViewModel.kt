@@ -117,6 +117,13 @@ class CartViewModel(
             successMessage = null
         )
     }
+
+    fun clearCart() {
+        viewModelScope.launch {
+            cartItemRepository.deleteAllCartItems(userId)
+            _state.update { it.copy(cartItems = emptyList(), itemTotal = 0.0, tax = 0.0, total = 0.0) }
+        }
+    }
 }
 
 class CartViewModelFactory(

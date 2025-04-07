@@ -16,10 +16,12 @@ class CartItemRepository(
     private val firebaseDatabase: FirebaseDatabase
 ) {
     suspend fun getAllCartItemsFromLocal(): List<CartItem> {
-        return cartItemDao.getAllCartItems()
+        return cartItemDao.getAllCartItems() // Sửa lỗi: xóa dòng return emptyList()
     }
 
     suspend fun getCartItemsByUser(userId: Int): List<CartItem> {
+        // Đồng bộ dữ liệu từ Firebase trước khi lấy từ RoomDB
+        syncCartItemsFromRemote(userId)
         return cartItemDao.getCartItemsByUser(userId)
     }
 
@@ -78,5 +80,13 @@ class CartItemRepository(
             reference.addValueEventListener(listener)
             awaitClose { reference.removeEventListener(listener) }
         }
+    }
+
+    suspend fun deleteAllCartItems(userId: Int) {
+        cartItemDao.deleteCartItemsByUser(userId)
+        val snapshot = firebaseDatabase.getReference("cartitems").get().await()
+        val cartItems = snapshot.children.mapNotNull { it.getValue(CartItem::class.java) }.toMutableList()
+        val updatedCartItems = cartItems.filter { it.userId != userId }
+        firebaseDatabase.getReference("cartitems").setValue(updatedCartItems).await()
     }
 }

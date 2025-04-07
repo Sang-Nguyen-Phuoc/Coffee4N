@@ -16,28 +16,41 @@ class OrderItemRepository(
     }
 
     suspend fun getOrderItemsByOrder(orderId: Int): List<OrderItem> {
-        return orderItemDao.getOrderItemsByOrder(orderId)
-    }
-
-    private suspend fun syncOrderItemsFromRemote(orderId: Int) {
-        val snapshot = firebaseDatabase.getReference("orderitems").child(orderId.toString()).get().await()
+        val localItems = orderItemDao.getOrderItemsByOrder(orderId)
+        if (localItems.isNotEmpty()) return localItems
+        val snapshot = firebaseDatabase.getReference("orderitems").get().await()
         val orderItems = snapshot.children.mapNotNull { it.getValue(OrderItem::class.java) }
-        orderItems.forEach { orderItemDao.insertOrderItem(it) }
+        val orderItemsForOrder = orderItems.filter { it.orderId == orderId }
+        orderItemsForOrder.forEach { orderItemDao.insertOrderItem(it) }
+        return orderItemsForOrder
     }
 
     suspend fun addOrderItem(orderItem: OrderItem) {
         orderItemDao.insertOrderItem(orderItem)
-        firebaseDatabase.getReference("orderitems").child(orderItem.orderId.toString()).child(orderItem.id.toString()).setValue(orderItem).await()
+        val snapshot = firebaseDatabase.getReference("orderitems").get().await()
+        val orderItems = snapshot.children.mapNotNull { it.getValue(OrderItem::class.java) }.toMutableList()
+        val existingIndex = orderItems.indexOfFirst { it.id == orderItem.id && it.orderId == orderItem.orderId }
+        if (existingIndex != -1) {
+            orderItems[existingIndex] = orderItem
+        } else {
+            orderItems.add(orderItem)
+        }
+        firebaseDatabase.getReference("orderitems").setValue(orderItems).await()
     }
 
     suspend fun deleteOrderItem(id: Int, orderId: Int) {
         orderItemDao.deleteOrderItem(id)
-        firebaseDatabase.getReference("orderitems").child(orderId.toString()).child(id.toString()).removeValue().await()
+        val snapshot = firebaseDatabase.getReference("orderitems").get().await()
+        val orderItems = snapshot.children.mapNotNull { it.getValue(OrderItem::class.java) }.toMutableList()
+        val updatedOrderItems = orderItems.filter { it.id != id || it.orderId != orderId }
+        firebaseDatabase.getReference("orderitems").setValue(updatedOrderItems).await()
     }
 
     fun getOrderItemsFlow(orderId: Int): Flow<List<OrderItem>> = flow {
-        emit(orderItemDao.getOrderItemsByOrder(orderId))
-        syncOrderItemsFromRemote(orderId)
-        emit(orderItemDao.getOrderItemsByOrder(orderId))
+        val snapshot = firebaseDatabase.getReference("orderitems").get().await()
+        val orderItems = snapshot.children.mapNotNull { it.getValue(OrderItem::class.java) }
+        val orderItemsForOrder = orderItems.filter { it.orderId == orderId }
+        orderItemsForOrder.forEach { orderItemDao.insertOrderItem(it) }
+        emit(orderItemsForOrder)
     }
 }

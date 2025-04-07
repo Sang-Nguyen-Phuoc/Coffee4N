@@ -29,6 +29,7 @@ import com.example.coffee4n.ui.home.HomeScreen
 import com.example.coffee4n.ui.login.LoginScreen
 import com.example.coffee4n.ui.notifications.NotificationsScreen
 import com.example.coffee4n.ui.cart.CartScreen
+import com.example.coffee4n.ui.checkout.CheckoutScreen
 import com.example.coffee4n.ui.profile.ProfileScreen
 import com.example.coffee4n.ui.signup.SignupScreen
 import com.example.coffee4n.ui.welcome.WelcomeScreen
@@ -141,10 +142,10 @@ fun AppNavHost(startDestination: String) {
             composable(Destinations.SIGNUP) { SignupScreen(navController) }
             composable(Destinations.HOME) { HomeScreen(navController) }
             composable(Destinations.FAVORITES) { FavoritesScreen(navController) }
-            composable(Destinations.CART) { // Bỏ userId khỏi route
+            composable(Destinations.CART) {
                 CartScreen(navController = navController)
             }
-            composable(Destinations.CHECKOUT) { }
+            composable(Destinations.CHECKOUT) { CheckoutScreen(navController) }
             composable(Destinations.NOTIFICATIONS) { NotificationsScreen(navController) }
             composable(Destinations.PROFILE) { ProfileScreen(navController) }
             composable(Destinations.BOOKING_TABLE) { BookingTableScreen(navController) }

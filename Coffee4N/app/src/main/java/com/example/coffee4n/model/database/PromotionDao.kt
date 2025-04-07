@@ -19,4 +19,7 @@ interface PromotionDao {
 
     @Query("DELETE FROM promotion WHERE id = :id")
     suspend fun deletePromotion(id: Int)
+
+    @Query("SELECT * FROM promotion WHERE code = :code")
+    suspend fun getPromotionByCode(code: String): Promotion?
 }
