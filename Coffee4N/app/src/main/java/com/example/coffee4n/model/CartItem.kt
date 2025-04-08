@@ -9,11 +9,17 @@ data class CartItem(
     val productId: Int = 0,
     val quantity: Int = 0,
     val userId: Int = 0,
-    val productName: String,
-    val productPrice: Double,
-    val productImageUrl: String = ""
 ) {
-    constructor() : this(0, 0, 0, 0, "", 0.0, "")
+    constructor() : this(0, 0, 0, 0)
 
-    fun getTotal(): Double = productPrice * quantity
+
+    // This function can be used when sending data to Firebase
+    fun toSimpleCartItem(): Map<String, Any> {
+        return mapOf(
+            "id" to id,
+            "productId" to productId,
+            "quantity" to quantity,
+            "userId" to userId
+        )
+    }
 }

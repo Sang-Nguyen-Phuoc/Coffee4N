@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 class ProductDetailsViewModel(application: Application) : AndroidViewModel(application) {
     private val productRepository: ProductRepository
@@ -127,14 +126,12 @@ class ProductDetailsViewModel(application: Application) : AndroidViewModel(appli
                         return@launch
                     }
 
+                    // Create a simplified CartItem with only necessary fields for Firebase
                     val cartItem = CartItem(
                         id = 0, // Will be auto-generated
                         userId = userId,
                         productId = product.id,
-                        quantity = quantity,
-                        productName = product.name,
-                        productPrice = product.price,
-                        productImageUrl = product.imageUrl
+                        quantity = quantity
                     )
 
                     cartRepository.addToCart(userId, cartItem)
