@@ -11,7 +11,14 @@ private val LightColorScheme = lightColorScheme(
     secondary = Color.Gray,
     onSecondary = Color.LightGray,
     tertiary = Color.Magenta,
-    background = Color.Black
+    background = Color.Black,  // App background color
+         // Surface container color
+//    surfaceVariant = Color.Red.copy(alpha = 0.8f),  // Alternative surface color
+//    surfaceTint = Color.Red,  // Used for tinting surfaces for elevation
+
+    // Status bar related colors
+    inverseSurface = Color.Black,  // We'll use this for status bar background
+    inverseOnSurface = Color.White // Status bar content color
 )
 
 @Composable

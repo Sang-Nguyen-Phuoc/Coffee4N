@@ -78,7 +78,7 @@ fun HomeScreen(navController: NavController) {
         .sortedBy { if (state.sortAscending) it.price else -it.price }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp)
+        modifier = Modifier.fillMaxSize().background(Color.White).padding(16.dp)
     ) {
         // Location Bar
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -220,7 +220,7 @@ fun HomeScreen(navController: NavController) {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(filteredProducts) { product ->
-                ProductCard(product)
+                ProductCard(product, navController)
             }
         }
     }
@@ -229,12 +229,14 @@ fun HomeScreen(navController: NavController) {
 
 
 @Composable
-fun ProductCard(product: Product) {
+fun ProductCard(product: Product, navController: NavController) {
     Card(
         modifier = Modifier
             .width(150.dp)
             .height(220.dp)
-            .clickable { /* Navigate to product details */ }
+            .clickable {
+                navController.navigate(Destinations.productDetails(product.id))
+            }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -304,7 +306,11 @@ fun ProductCard(product: Product) {
                 ) {
                     Text("$${product.price}", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.weight(1f))
-                    IconButton(onClick = { /* Add to cart */ }) {
+                    IconButton(onClick = {
+                        // Quick add to cart (this could be implemented in the HomeViewModel)
+                        // For now, we'll just navigate to product details
+                        navController.navigate(Destinations.productDetails(product.id))
+                    }) {
                         Icon(Icons.Default.Add, contentDescription = "Add to Cart")
                     }
                 }
