@@ -167,5 +167,21 @@ class UserRepository(
         }
     }
 
+    // Get the current Firebase authentication token
+    suspend fun getAuthToken(): String {
+        return firebaseAuth.currentUser?.getIdToken(false)?.await()?.token ?: ""
+    }
+
+    // Check if a token is valid
+    suspend fun isTokenValid(token: String): Boolean {
+        return try {
+            // This will throw an exception if the token is invalid
+            FirebaseAuth.getInstance().signInWithCustomToken(token).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
 
 }

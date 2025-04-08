@@ -72,6 +72,10 @@ fun SignupScreen(navController: NavController) {
     LaunchedEffect(signupState.value) {
         when (val state = signupState.value) {
             is SignupState.Success -> {
+                with(prefs.edit()) {
+                    putBoolean("isFirstTime", false)
+                    apply()
+                }
                 snackbarHostState.showSnackbar("Account created successfully! Please login.")
                 navController.navigate(Destinations.LOGIN) {
                     popUpTo(Destinations.SIGNUP) { inclusive = true }

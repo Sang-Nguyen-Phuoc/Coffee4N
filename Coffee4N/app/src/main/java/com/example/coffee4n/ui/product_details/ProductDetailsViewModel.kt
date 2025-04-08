@@ -45,6 +45,15 @@ class ProductDetailsViewModel(application: Application) : AndroidViewModel(appli
 
                 // Get product details
                 productRepository.getProductFlow(productId).collect { product ->
+                    // Check if product exists
+                    if (product == null) {
+                        _productState.update { it.copy(
+                            isLoading = false,
+                            error = "Product not found"
+                        )}
+                        return@collect
+                    }
+
                     // Check if the product is in favorites
                     val isFavorite = if (userId > 0) {
                         favoritesRepository.isProductInFavorites(userId, productId)
@@ -52,13 +61,27 @@ class ProductDetailsViewModel(application: Application) : AndroidViewModel(appli
                         false
                     }
 
-                    _productState.update {
-                        it.copy(
-                            product = product,
-                            isLoading = false,
-                            error = null,
-                            isFavorite = isFavorite
-                        )
+                    // Check if product is already in cart
+                    if (userId > 0) {
+                        val isInCart = cartRepository.isProductInCart(userId, productId)
+                        _productState.update {
+                            it.copy(
+                                product = product,
+                                isLoading = false,
+                                error = null,
+                                isFavorite = isFavorite,
+                                isInCart = isInCart
+                            )
+                        }
+                    } else {
+                        _productState.update {
+                            it.copy(
+                                product = product,
+                                isLoading = false,
+                                error = null,
+                                isFavorite = isFavorite
+                            )
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -85,11 +108,25 @@ class ProductDetailsViewModel(application: Application) : AndroidViewModel(appli
 
     fun addToCart(product: Product, quantity: Int) {
         viewModelScope.launch {
+            _productState.update { it.copy(isAddingToCart = true) }
+
             try {
                 val prefs = getApplication<Application>().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
                 val userId = prefs.getInt("userId", 0)
 
                 if (userId > 0) {
+                    // Validate stock availability
+                    if (quantity > product.stockQuantity) {
+                        _productState.update {
+                            it.copy(
+                                isAddingToCart = false,
+                                error = "Sorry, only ${product.stockQuantity} items available.",
+                                showSnackbar = true
+                            )
+                        }
+                        return@launch
+                    }
+
                     val cartItem = CartItem(
                         id = 0, // Will be auto-generated
                         userId = userId,
@@ -101,9 +138,32 @@ class ProductDetailsViewModel(application: Application) : AndroidViewModel(appli
                     )
 
                     cartRepository.addToCart(userId, cartItem)
+
+                    _productState.update {
+                        it.copy(
+                            isAddingToCart = false,
+                            isInCart = true,
+                            cartQuantity = quantity,
+                            showSnackbar = true,
+                            snackbarMessage = "${product.name} added to cart"
+                        )
+                    }
+                } else {
+                    _productState.update {
+                        it.copy(
+                            isAddingToCart = false,
+                            showLoginDialog = true
+                        )
+                    }
                 }
             } catch (e: Exception) {
-                // Handle error
+                _productState.update {
+                    it.copy(
+                        isAddingToCart = false,
+                        error = "Failed to add to cart: ${e.message}",
+                        showSnackbar = true
+                    )
+                }
             }
         }
     }
@@ -115,26 +175,65 @@ class ProductDetailsViewModel(application: Application) : AndroidViewModel(appli
 
             if (userId > 0) {
                 try {
+                    _productState.update { it.copy(isUpdatingFavorite = true) }
+
                     if (_productState.value.isFavorite) {
                         // Remove from favorites
                         favoritesRepository.removeFromFavorites(userId, product.id)
+                        _productState.update {
+                            it.copy(
+                                isFavorite = false,
+                                isUpdatingFavorite = false,
+                                showSnackbar = true,
+                                snackbarMessage = "Removed from favorites"
+                            )
+                        }
                     } else {
                         // Add to favorites
                         favoritesRepository.addToFavorites(userId, product)
+                        _productState.update {
+                            it.copy(
+                                isFavorite = true,
+                                isUpdatingFavorite = false,
+                                showSnackbar = true,
+                                snackbarMessage = "Added to favorites"
+                            )
+                        }
                     }
-
-                    _productState.update { it.copy(isFavorite = !it.isFavorite) }
                 } catch (e: Exception) {
-                    // Handle error
+                    _productState.update {
+                        it.copy(
+                            isUpdatingFavorite = false,
+                            error = e.message,
+                            showSnackbar = true
+                        )
+                    }
                 }
+            } else {
+                _productState.update { it.copy(showLoginDialog = true) }
             }
         }
+    }
+
+    fun clearSnackbar() {
+        _productState.update { it.copy(showSnackbar = false, snackbarMessage = null) }
+    }
+
+    fun dismissLoginDialog() {
+        _productState.update { it.copy(showLoginDialog = false) }
     }
 }
 
 data class ProductDetailsState(
     val product: Product? = null,
     val isLoading: Boolean = false,
+    val isAddingToCart: Boolean = false,
+    val isUpdatingFavorite: Boolean = false,
     val error: String? = null,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val isInCart: Boolean = false,
+    val cartQuantity: Int = 0,
+    val showSnackbar: Boolean = false,
+    val snackbarMessage: String? = null,
+    val showLoginDialog: Boolean = false
 )

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+// Update LoginViewModel
 class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
     private val _email = MutableStateFlow("")
     val email: StateFlow<String> = _email
@@ -29,18 +30,20 @@ class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
         viewModelScope.launch {
             try {
                 _loginState.value = LoginState.Loading
-                val userId = userRepository.login(_email.value, _password.value)
-                _loginState.value = if (userId != null) {
-                    LoginState.Success(userId)
+                val result = userRepository.login(_email.value, _password.value)
+
+                if (result != null) {
+                    // Get the Firebase auth token
+                    val token = userRepository.getAuthToken()
+                    _loginState.value = LoginState.Success(result, token)
                 } else {
-                    LoginState.Error("Invalid email or password")
+                    _loginState.value = LoginState.Error("Invalid email or password")
                 }
             } catch (e: Exception) {
                 _loginState.value = LoginState.Error(e.message ?: "Login failed")
             }
         }
     }
-
 
     fun resetLoginState() {
         _loginState.value = LoginState.Idle

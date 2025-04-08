@@ -38,13 +38,20 @@ class MainActivity : ComponentActivity() {
         // Set status bar text to white (false means dark icons aren't used, so light/white icons)
         controller.isAppearanceLightStatusBars = false
 
+        // Get saved preferences
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         val isFirstTime = prefs.getBoolean("isFirstTime", true)
         val authToken = prefs.getString("authToken", null)
-        val userRole = prefs.getString("userRole", "customer")
-        val startDestination = if (isFirstTime) {
+        val userId = prefs.getInt("userId", 0)
+
+
+
+        // Determine start destination based on auth status
+        var startDestination = if (isFirstTime) {
             Destinations.WELCOME
-        } else if (authToken != null) {
+        } else if (authToken != null && userId != 0) {
+            // Initialize Firebase Auth if using token validation
+            // Note: Full token validation implementation would be done here
             Destinations.HOME
         } else {
             Destinations.LOGIN
