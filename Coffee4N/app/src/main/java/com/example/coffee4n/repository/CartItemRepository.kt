@@ -1,6 +1,7 @@
 package com.example.coffee4n.repository
 
 import com.example.coffee4n.model.CartItem
+import com.example.coffee4n.model.Product
 import com.example.coffee4n.model.database.CartItemDao
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -12,28 +13,10 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 class CartItemRepository(
-    private val cartItemDao: CartItemDao,
     private val firebaseDatabase: FirebaseDatabase
 ) {
-    suspend fun getAllCartItemsFromLocal(): List<CartItem> {
-        return cartItemDao.getAllCartItems() // Sửa lỗi: xóa dòng return emptyList()
-    }
-
-    suspend fun getCartItemsByUser(userId: Int): List<CartItem> {
-        // Đồng bộ dữ liệu từ Firebase trước khi lấy từ RoomDB
-        syncCartItemsFromRemote(userId)
-        return cartItemDao.getCartItemsByUser(userId)
-    }
-
-    private suspend fun syncCartItemsFromRemote(userId: Int) {
-        val snapshot = firebaseDatabase.getReference("cartitems").get().await()
-        val cartItems = snapshot.children.mapNotNull { it.getValue(CartItem::class.java) }
-            .filter { it.userId == userId }
-        cartItems.forEach { cartItemDao.insertCartItem(it) }
-    }
 
     suspend fun addCartItem(cartItem: CartItem) {
-        cartItemDao.insertCartItem(cartItem)
         val snapshot = firebaseDatabase.getReference("cartitems").get().await()
         val cartItems = snapshot.children.mapNotNull { it.getValue(CartItem::class.java) }.toMutableList()
         val existingIndex = cartItems.indexOfFirst { it.id == cartItem.id && it.userId == cartItem.userId }
@@ -46,7 +29,6 @@ class CartItemRepository(
     }
 
     suspend fun deleteCartItem(id: Int, userId: Int) {
-        cartItemDao.deleteCartItem(id)
         val snapshot = firebaseDatabase.getReference("cartitems").get().await()
         val cartItems = snapshot.children.mapNotNull { it.getValue(CartItem::class.java) }.toMutableList()
         val updatedCartItems = cartItems.filter { it.id != id || it.userId != userId }
@@ -54,7 +36,6 @@ class CartItemRepository(
     }
 
     suspend fun clearCart(userId: Int) {
-        cartItemDao.deleteCartItemsByUser(userId)
         val snapshot = firebaseDatabase.getReference("cartitems").get().await()
         val cartItems = snapshot.children.mapNotNull { it.getValue(CartItem::class.java) }.toMutableList()
         val updatedCartItems = cartItems.filter { it.userId != userId }
@@ -83,10 +64,10 @@ class CartItemRepository(
     }
 
     suspend fun deleteAllCartItems(userId: Int) {
-        cartItemDao.deleteCartItemsByUser(userId)
         val snapshot = firebaseDatabase.getReference("cartitems").get().await()
         val cartItems = snapshot.children.mapNotNull { it.getValue(CartItem::class.java) }.toMutableList()
         val updatedCartItems = cartItems.filter { it.userId != userId }
         firebaseDatabase.getReference("cartitems").setValue(updatedCartItems).await()
     }
+
 }

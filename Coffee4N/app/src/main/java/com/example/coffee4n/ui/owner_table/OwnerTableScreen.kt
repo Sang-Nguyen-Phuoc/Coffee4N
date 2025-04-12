@@ -171,12 +171,12 @@ fun OwnerTableScreen(viewModel: OwnerTableViewModel = viewModel()) {
                         }
                     }
                 }
-
                 if (state.tables.isNotEmpty()) {
                     SummaryCard(
                         tables = state.tables,
                         availableColor = availableColor,
                         bookedColor = bookedColor,
+                        bookingCount = state.bookingCount, // Truyền tham số mới
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)
@@ -190,10 +190,12 @@ fun OwnerTableScreen(viewModel: OwnerTableViewModel = viewModel()) {
         if (state.showBookingDialog) {
             AlertDialog(
                 onDismissRequest = { viewModel.closeBookingDialog() },
-                title = { Text("Bookings for Table ${state.selectedTableBookings.firstOrNull()?.tableId ?: ""}") },
+                title = {
+                    Text("Bookings for Table ${state.selectedTableBookings.firstOrNull()?.tableId ?: state.tables.find { it.id == state.selectedTableBookings.firstOrNull()?.tableId }?.tableNumber ?: ""}")
+                },
                 text = {
                     if (state.selectedTableBookings.isEmpty()) {
-                        Text("No pending bookings for this table.")
+                        Text("No bookings exist for this table.")
                     } else {
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -211,32 +213,29 @@ fun OwnerTableScreen(viewModel: OwnerTableViewModel = viewModel()) {
                                         Text("Phone: ${booking.phoneNumber}", style = MaterialTheme.typography.bodyMedium)
                                         Text("People: ${booking.numberOfPeople}", style = MaterialTheme.typography.bodyMedium)
                                         Text("Time: ${booking.bookingTime}", style = MaterialTheme.typography.bodyMedium)
+                                        Text("Status: ${booking.status}", style = MaterialTheme.typography.bodyMedium)
                                         booking.notes?.let { Text("Notes: $it", style = MaterialTheme.typography.bodySmall) }
 
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            modifier = Modifier.padding(top = 8.dp)
-                                        ) {
-                                            // Nút Confirm
-                                            Button(
-                                                onClick = { viewModel.confirmBooking(booking) },
-                                                enabled = booking.status != "CONFIRMED", // Vô hiệu hóa nếu đã xác nhận
-                                                colors = ButtonDefaults.buttonColors(
-                                                    containerColor = if (booking.status == "CONFIRMED") disabledColor else availableColor,
-                                                    disabledContainerColor = disabledColor // Màu xám khi vô hiệu hóa
-                                                )
+                                        if (booking.status == "PENDING") {
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                modifier = Modifier.padding(top = 8.dp)
                                             ) {
-                                                Text(
-                                                    text = if (booking.status == "CONFIRMED") "Confirmed" else "Confirm"
-                                                )
-                                            }
+                                                // Nút Confirm
+                                                Button(
+                                                    onClick = { viewModel.confirmBooking(booking) },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = availableColor)
+                                                ) {
+                                                    Text("Confirm")
+                                                }
 
-                                            // Nút Reject
-                                            Button(
-                                                onClick = { viewModel.rejectBooking(booking) },
-                                                colors = ButtonDefaults.buttonColors(containerColor = bookedColor)
-                                            ) {
-                                                Text("Reject")
+                                                // Nút Reject
+                                                Button(
+                                                    onClick = { viewModel.rejectBooking(booking) },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = bookedColor)
+                                                ) {
+                                                    Text("Reject")
+                                                }
                                             }
                                         }
                                     }
@@ -562,14 +561,15 @@ fun TableCard(
     bookedColor: Color
 ) {
     val state by viewModel.state.collectAsState()
-    val pendingCount = state.pendingBookings[table.id] ?: 0 // Lấy số lượng pending bookings cho bàn này
+    val pendingCount = state.pendingBookings[table.id] ?: 0
+    val bookingCount = state.bookingCount[table.id] ?: 0 // Tổng số đơn đặt bàn
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(150.dp)
             .shadow(8.dp, RoundedCornerShape(16.dp))
-            .clickable { viewModel.openBookingDialog(table) }, // Thêm sự kiện nhấn
+            .clickable { viewModel.openBookingDialog(table) },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
@@ -609,16 +609,17 @@ fun TableCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Hiển thị số đơn đặt bàn
                         Box(
                             modifier = Modifier
                                 .background(
-                                    color = if (table.status == "AVAILABLE") availableColor else bookedColor,
+                                    color = if (bookingCount > 0) bookedColor else availableColor,
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                text = table.status,
+                                text = "$bookingCount Bookings",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -725,10 +726,11 @@ fun SummaryCard(
     tables: List<Table>,
     availableColor: Color,
     bookedColor: Color,
+    bookingCount: Map<Int, Int>, // Thêm tham số mới
     modifier: Modifier = Modifier
 ) {
     val availableTables = tables.count { it.status == "AVAILABLE" }
-    val bookedTables = tables.count { it.status == "BOOKED" }
+    val totalBookings = bookingCount.values.sum() // Tổng số đơn đặt bàn
     val totalCapacity = tables.sumOf { it.capacity }
 
     Card(
@@ -755,7 +757,6 @@ fun SummaryCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Available tables
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -772,24 +773,22 @@ fun SummaryCard(
                     )
                 }
 
-                // Booked tables
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = bookedTables.toString(),
+                        text = totalBookings.toString(),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = bookedColor
                     )
                     Text(
-                        text = "Booked",
+                        text = "Bookings",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
                 }
 
-                // Total capacity
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {

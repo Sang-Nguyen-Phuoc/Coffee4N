@@ -232,24 +232,11 @@ fun BookingTableCard(
         calendar.get(Calendar.DAY_OF_MONTH)
     )
 
-    val currentBooking = bookingTables.firstOrNull { it.tableId == table.id && it.status in listOf("PENDING", "CONFIRMED") }
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(150.dp)
-            .shadow(8.dp, RoundedCornerShape(16.dp))
-            .clickable(enabled = currentBooking != null, onClick = {
-                showDialog = true
-                // Khởi tạo giá trị ban đầu khi mở dialog chỉnh sửa
-                currentBooking?.let {
-                    customerName = it.customerName
-                    phoneNumber = it.phoneNumber
-                    numberOfPeople = it.numberOfPeople.toString()
-                    bookingTime = it.bookingTime
-                    notes = it.notes ?: ""
-                }
-            }),
+            .shadow(8.dp, RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
@@ -280,21 +267,7 @@ fun BookingTableCard(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Box(
-                    modifier = Modifier
-                        .background(
-                            color = if (table.status == "AVAILABLE") availableColor else bookedColor,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = table.status,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
+                Spacer(modifier = Modifier.height(0.dp))
 
                 Row(
                     modifier = Modifier
@@ -332,130 +305,56 @@ fun BookingTableCard(
                         }
                     }
 
-                    when {
-                        currentBooking == null && table.status == "AVAILABLE" -> {
-                            Button(
-                                onClick = { showDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier
-                                    .height(36.dp)
-                                    .shadow(4.dp, RoundedCornerShape(8.dp))
-                            ) {
-                                Text(
-                                    "Book Now",
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                        currentBooking?.status == "PENDING" || currentBooking?.status == "CONFIRMED" -> {
-                            Box(
-                                modifier = Modifier
-                                    .background(
-                                        color = if (currentBooking?.status == "PENDING") Color(0xFFFFB74D) else Color(0xFF5A9280),
-                                        shape = RoundedCornerShape(4.dp)
-                                    )
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = if (currentBooking?.status == "PENDING") "Pending" else "Confirmed",
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
+                    // Luôn hiển thị nút "Book Now"
+                    Button(
+                        onClick = { showDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .height(36.dp)
+                            .shadow(4.dp, RoundedCornerShape(8.dp))
+                    ) {
+                        Text(
+                            "Book Now",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
         }
     }
 
+    // Dialog cho đặt bàn
     if (showDialog) {
-        if (currentBooking == null) {
-            // Dialog for new booking
-            AlertDialog(
-                onDismissRequest = { showDialog = false },
-                title = { Text("Book Table ${table.tableNumber}") },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = customerName, onValueChange = { customerName = it }, label = { Text("Customer Name") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = phoneNumber, onValueChange = { phoneNumber = it }, label = { Text("Phone Number") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = numberOfPeople, onValueChange = { numberOfPeople = it }, label = { Text("Number of People") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = bookingTime, onValueChange = { }, label = { Text("Booking Time") }, modifier = Modifier.fillMaxWidth().clickable { datePickerDialog.show() }, enabled = false)
-                        OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("Notes (optional)") }, modifier = Modifier.fillMaxWidth())
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            if (customerName.isNotBlank() && phoneNumber.isNotBlank() && numberOfPeople.isNotBlank() && bookingTime.isNotBlank()) {
-                                onBook(customerName, phoneNumber, numberOfPeople.toIntOrNull() ?: 1, bookingTime, notes.takeIf { it.isNotBlank() })
-                                showDialog = false
-                            }
-                        },
-                        enabled = customerName.isNotBlank() && phoneNumber.isNotBlank() && numberOfPeople.isNotBlank() && bookingTime.isNotBlank()
-                    ) {
-                        Text("Confirm")
-                    }
-                },
-                dismissButton = { TextButton(onClick = { showDialog = false }) { Text("Cancel") } }
-            )
-        } else {
-            // Dialog for editing existing booking
-            AlertDialog(
-                onDismissRequest = { showDialog = false },
-                title = { Text("Edit Booking - Table ${table.tableNumber}") },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = customerName, onValueChange = { customerName = it }, label = { Text("Customer Name") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = phoneNumber, onValueChange = { phoneNumber = it }, label = { Text("Phone Number") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = numberOfPeople, onValueChange = { numberOfPeople = it }, label = { Text("Number of People") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = bookingTime, onValueChange = { }, label = { Text("Booking Time") }, modifier = Modifier.fillMaxWidth().clickable { datePickerDialog.show() }, enabled = false)
-                        OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("Notes (optional)") }, modifier = Modifier.fillMaxWidth())
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            if (customerName.isNotBlank() && phoneNumber.isNotBlank() && numberOfPeople.isNotBlank() && bookingTime.isNotBlank()) {
-                                currentBooking.id?.let { id ->
-                                    onEdit(
-                                        BookingTable(
-                                            id = id,
-                                            tableId = currentBooking.tableId,
-                                            customerName = customerName,
-                                            phoneNumber = phoneNumber,
-                                            numberOfPeople = numberOfPeople.toIntOrNull() ?: currentBooking.numberOfPeople,
-                                            bookingTime = bookingTime,
-                                            notes = notes.takeIf { it.isNotBlank() },
-                                            status = currentBooking.status
-                                        )
-                                    )
-                                }
-                                showDialog = false
-                            }
-                        },
-                        enabled = customerName.isNotBlank() && phoneNumber.isNotBlank() && numberOfPeople.isNotBlank() && bookingTime.isNotBlank()
-                    ) {
-                        Text("Update")
-                    }
-                },
-                dismissButton = {
-                    Button(
-                        onClick = {
-                            currentBooking.id?.let { onCancel(it) }
-                            showDialog = false
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                    ) {
-                        Text("Cancel Booking")
-                    }
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Book Table ${table.tableNumber}") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = customerName, onValueChange = { customerName = it }, label = { Text("Customer Name") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = phoneNumber, onValueChange = { phoneNumber = it }, label = { Text("Phone Number") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = numberOfPeople, onValueChange = { numberOfPeople = it }, label = { Text("Number of People") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = bookingTime, onValueChange = { }, label = { Text("Booking Time") }, modifier = Modifier.fillMaxWidth().clickable { datePickerDialog.show() }, enabled = false)
+                    OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("Notes (optional)") }, modifier = Modifier.fillMaxWidth())
                 }
-            )
-        }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (customerName.isNotBlank() && phoneNumber.isNotBlank() && numberOfPeople.isNotBlank() && bookingTime.isNotBlank()) {
+                            onBook(customerName, phoneNumber, numberOfPeople.toIntOrNull() ?: 1, bookingTime, notes.takeIf { it.isNotBlank() })
+                            showDialog = false
+                        }
+                    },
+                    enabled = customerName.isNotBlank() && phoneNumber.isNotBlank() && numberOfPeople.isNotBlank() && bookingTime.isNotBlank()
+                ) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = { TextButton(onClick = { showDialog = false }) { Text("Cancel") } }
+        )
     }
 }
 

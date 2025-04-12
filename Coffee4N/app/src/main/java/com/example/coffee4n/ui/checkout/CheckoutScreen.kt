@@ -51,7 +51,6 @@ fun CheckoutScreen(navController: NavController) {
     // Khởi tạo RoomDB
     val database = AppDatabase.getDatabase(context)
     val cartItemRepository = CartItemRepository(
-        cartItemDao = database.cartItemDao(),
         firebaseDatabase = FirebaseDatabase.getInstance()
     )
     val productRepository = ProductRepository(FirebaseDatabase.getInstance())
@@ -64,7 +63,6 @@ fun CheckoutScreen(navController: NavController) {
         firebaseDatabase = FirebaseDatabase.getInstance()
     )
     val orderItemRepository = OrderItemRepository(
-        orderItemDao = database.orderItemDao(),
         firebaseDatabase = FirebaseDatabase.getInstance()
     )
 

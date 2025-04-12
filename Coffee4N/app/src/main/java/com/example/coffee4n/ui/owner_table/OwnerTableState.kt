@@ -5,7 +5,9 @@ import com.example.coffee4n.model.Table
 
 data class OwnerTableState(
     val tables: List<Table> = emptyList(),
-    val pendingBookings: Map<Int, Int> = emptyMap(), // Map từ tableId đến số lượng pending bookings
+    val pendingBookings: Map<Int, Int> = emptyMap(),
+    val bookingCount: Map<Int, Int> = emptyMap(),
+    val allBookings: List<BookingTable> = emptyList(), // Thêm trường mới
     val isLoading: Boolean = false,
     val error: String? = null,
     val showAddEditDialog: Boolean = false,
