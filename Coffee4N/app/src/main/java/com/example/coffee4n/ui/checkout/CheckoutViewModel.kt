@@ -130,7 +130,6 @@ class CheckoutViewModel(
                     quantity = item.cartItem.quantity,
                     price = item.product.price
                 )
-                orderItemRepository.addOrderItem(orderItem)
             }
             cartViewModel.clearCart()
             onSuccess()

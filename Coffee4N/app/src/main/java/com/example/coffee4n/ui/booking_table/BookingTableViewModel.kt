@@ -54,30 +54,21 @@ class BookingTableViewModel(
             try {
                 _state.value = _state.value.copy(isLoading = true)
 
-                val tableToUpdate = _state.value.tables.find { it.id == tableId }
+                val bookingTable = BookingTable(
+                    tableId = tableId,
+                    customerName = customerName,
+                    phoneNumber = phoneNumber,
+                    numberOfPeople = numberOfPeople,
+                    bookingTime = bookingTime,
+                    notes = notes,
+                    status = "PENDING"
+                )
+                tableRepository.addBookingTable(bookingTable)
 
-                if (tableToUpdate != null && tableToUpdate.status == "AVAILABLE") {
-                    val bookingTable = BookingTable(
-                        tableId = tableId,
-                        customerName = customerName,
-                        phoneNumber = phoneNumber,
-                        numberOfPeople = numberOfPeople,
-                        bookingTime = bookingTime,
-                        notes = notes,
-                        status = "PENDING"
-                    )
-                    tableRepository.addBookingTable(bookingTable)
-
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        successMessage = "Table booking request sent for $customerName! Waiting for admin approval."
-                    )
-                } else {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        error = "Table is not available for booking"
-                    )
-                }
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    successMessage = "The system has received your request and will respond in a few minutes."
+                )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,

@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class OwnerTableViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -35,17 +38,58 @@ class OwnerTableViewModel(application: Application) : AndroidViewModel(applicati
                 val bookingsFlow = repository.getBookingTablesFlow()
 
                 tablesFlow.combine(bookingsFlow) { tables, bookings ->
-                    val pendingBookingsMap = bookings
+                    // Xóa các booking quá khứ
+                    val currentTime = Calendar.getInstance().time
+                    val formatter = SimpleDateFormat("HH:mm dd/MM/yyyy", Locale.getDefault())
+                    val validBookings = bookings.filter { booking ->
+                        try {
+                            val bookingTime = formatter.parse(booking.bookingTime)
+                            bookingTime != null && bookingTime.time >= currentTime.time - 30 * 60 * 1000
+                        } catch (e: Exception) {
+                            false
+                        }
+                    }
+
+                    // Xóa các booking quá khứ từ Firebase
+                    bookings.filter { it !in validBookings }.forEach { booking ->
+                        booking.id?.let { bookingId ->
+                            repository.deleteBookingTable(bookingId)
+                        }
+                    }
+
+                    // Tính tổng số đơn đặt bàn (PENDING + CONFIRMED)
+                    val bookingCount = validBookings
+                        .filter { it.status in listOf("PENDING", "CONFIRMED") }
+                        .groupBy { it.tableId }
+                        .mapValues { it.value.size }
+
+                    // Tính số lượng booking PENDING
+                    val pendingBookingsMap = validBookings
                         .filter { it.status == "PENDING" }
                         .groupBy { it.tableId }
                         .mapValues { it.value.size }
-                    _state.update { it.copy(selectedTableBookings = bookings) } // Lưu tất cả bookings
-                    Pair(tables, pendingBookingsMap)
-                }.collect { (tables, pendingBookings) ->
+
+                    // Cập nhật trạng thái bàn nếu không còn booking hợp lệ
+                    val updatedTables = tables.map { table ->
+                        val hasActiveBooking = validBookings.any { it.tableId == table.id && it.status == "CONFIRMED" }
+                        if (!hasActiveBooking && table.status == "BOOKED") {
+                            repository.addTable(table.copy(status = "AVAILABLE"))
+                            table.copy(status = "AVAILABLE")
+                        } else {
+                            table
+                        }
+                    }
+
+                    Pair(updatedTables, validBookings to Pair(pendingBookingsMap, bookingCount))
+                }.collect { (tables, pair) ->
+                    val (bookings, pairData) = pair
+                    val (pendingBookings, bookingCount) = pairData
                     _state.update {
                         it.copy(
                             tables = tables,
+                            allBookings = bookings, // Lưu tất cả bookings
                             pendingBookings = pendingBookings,
+                            bookingCount = bookingCount,
                             isLoading = false,
                             error = null
                         )
@@ -62,9 +106,8 @@ class OwnerTableViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    // Mở dialog hiển thị booking của bàn
     fun openBookingDialog(table: Table) {
-        val bookingsForTable = _state.value.selectedTableBookings.filter { it.tableId == table.id && it.status == "PENDING" }
+        val bookingsForTable = _state.value.allBookings.filter { it.tableId == table.id }
         _state.update {
             it.copy(
                 showBookingDialog = true,
@@ -73,39 +116,54 @@ class OwnerTableViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    // Đóng dialog booking
     fun closeBookingDialog() {
         _state.update { it.copy(showBookingDialog = false, selectedTableBookings = emptyList()) }
     }
 
-    // Xác nhận booking
     fun confirmBooking(booking: BookingTable) {
         viewModelScope.launch {
             try {
                 val updatedBooking = booking.copy(status = "CONFIRMED")
                 repository.updateBookingTable(updatedBooking)
-                // Cập nhật trạng thái bàn thành "BOOKED"
                 val table = _state.value.tables.find { it.id == booking.tableId }
                 table?.let {
                     repository.addTable(it.copy(status = "BOOKED"))
                 }
-                // Cập nhật lại danh sách booking trong dialog
-                val updatedBookings = _state.value.selectedTableBookings.map {
-                    if (it.id == booking.id) updatedBooking else it
+                _state.update { state ->
+                    val updatedAllBookings = state.allBookings.map {
+                        if (it.id == booking.id) updatedBooking else it
+                    }
+                    val updatedSelectedBookings = state.selectedTableBookings.map {
+                        if (it.id == booking.id) updatedBooking else it
+                    }
+                    state.copy(
+                        allBookings = updatedAllBookings,
+                        selectedTableBookings = updatedSelectedBookings
+                    )
                 }
-                _state.update { it.copy(selectedTableBookings = updatedBookings) }
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Failed to confirm booking: ${e.message}") }
             }
         }
     }
 
-    // Từ chối booking
     fun rejectBooking(booking: BookingTable) {
         viewModelScope.launch {
             try {
                 val updatedBooking = booking.copy(status = "CANCELLED")
                 repository.updateBookingTable(updatedBooking)
+                _state.update { state ->
+                    val updatedAllBookings = state.allBookings.map {
+                        if (it.id == booking.id) updatedBooking else it
+                    }
+                    val updatedSelectedBookings = state.selectedTableBookings.map {
+                        if (it.id == booking.id) updatedBooking else it
+                    }
+                    state.copy(
+                        allBookings = updatedAllBookings,
+                        selectedTableBookings = updatedSelectedBookings
+                    )
+                }
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Failed to reject booking: ${e.message}") }
             }

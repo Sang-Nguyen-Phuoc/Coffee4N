@@ -81,7 +81,6 @@ fun CartScreen(navController: NavController) {
     } else {
         // Nếu có userId, hiển thị giỏ hàng
         val cartItemRepository = CartItemRepository(
-            cartItemDao = AppDatabase.getDatabase(context).cartItemDao(),
             firebaseDatabase = FirebaseDatabase.getInstance()
         )
         val productRepository = ProductRepository(FirebaseDatabase.getInstance())
