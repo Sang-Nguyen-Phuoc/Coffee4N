@@ -93,19 +93,19 @@ fun AppNavHost(startDestination: String) {
                                 }
                             }
                         )
-                        NavigationBarItem(
-                            icon = { Icon(Icons.Default.Favorite, contentDescription = "Favorites") },
-                            label = { Text("Favorites") },
-                            selected = currentRoute == Destinations.FAVORITES,
-                            onClick = {
-                                navController.navigate(Destinations.FAVORITES) {
-                                    popUpTo(Destinations.HOME) {
-                                        inclusive = false
-                                    }
-                                    launchSingleTop = true
-                                }
-                            }
-                        )
+//                        NavigationBarItem(
+//                            icon = { Icon(Icons.Default.Favorite, contentDescription = "Favorites") },
+//                            label = { Text("Favorites") },
+//                            selected = currentRoute == Destinations.FAVORITES,
+//                            onClick = {
+//                                navController.navigate(Destinations.FAVORITES) {
+//                                    popUpTo(Destinations.HOME) {
+//                                        inclusive = false
+//                                    }
+//                                    launchSingleTop = true
+//                                }
+//                            }
+//                        )
                         NavigationBarItem(
                             icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Cart") },
                             label = { Text("Cart") },

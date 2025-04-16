@@ -23,11 +23,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.coffee4n.R
 import com.example.coffee4n.model.User
 import com.example.coffee4n.model.database.AppDatabase
@@ -53,6 +55,7 @@ fun ProfileScreen(navController: NavController) {
         )
     )
 
+    val state by viewModel.state.collectAsState()
     val user by viewModel.user.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -92,12 +95,36 @@ fun ProfileScreen(navController: NavController) {
                     Spacer(modifier = Modifier.height(24.dp))
                     UserInfoSection(user)
                     Spacer(modifier = Modifier.weight(1f))
-                    LogoutButton {
-                        viewModel.logout(context)
-                        navController.navigate(Destinations.LOGIN) {
-                            popUpTo(0)
+                    if (userId != 0) {
+                        EditButton { viewModel.showEditDialog() }
+                        LogoutButton {
+                            viewModel.logout(context)
+                            navController.navigate(Destinations.LOGIN) {
+                                popUpTo(0)
+                            }
                         }
                     }
+                    else {
+                        LoginButton {
+                            navController.navigate(Destinations.LOGIN)
+                        }
+                    }
+
+                }
+                if (state.showEditDialog) {
+                    EditUserDialog(
+                        email = state.email,
+                        username = state.username,
+                        name = state.name,
+                        phone = state.phone,
+                        address = state.address,
+                        onUsernameChange = { viewModel.updateUsername(it) },
+                        onNameChange = { viewModel.updateName(it) },
+                        onPhoneChange = { viewModel.updatePhone(it) },
+                        onAddressChange = { viewModel.updateAddress(it) },
+                        onSave = { viewModel.saveUser()},
+                        onDismiss = { viewModel.hideEditDialog() }
+                    )
                 }
             }
         }
@@ -182,6 +209,48 @@ private fun InfoItem(icon: ImageVector, label: String, value: String) {
 }
 
 @Composable
+private fun EditButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = Color.Black
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp, vertical = 0.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Edit,
+            contentDescription = "Edit account",
+            modifier = Modifier.size(18.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Edit account", fontSize = 16.sp)
+    }
+}
+
+@Composable
+private fun LoginButton(onLogin: () -> Unit) {
+    Button(
+        onClick = onLogin,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.primary
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp, vertical = 16.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Login,
+            contentDescription = "Login",
+            modifier = Modifier.size(18.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Log In", fontSize = 16.sp)
+    }
+}
+
+@Composable
 private fun LogoutButton(onLogout: () -> Unit) {
     Button(
         onClick = onLogout,
@@ -201,3 +270,5 @@ private fun LogoutButton(onLogout: () -> Unit) {
         Text("Log Out", fontSize = 16.sp)
     }
 }
+
+

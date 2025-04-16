@@ -173,7 +173,7 @@ fun HomeScreen(navController: NavController) {
             Spacer(modifier = Modifier.weight(1f))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Best Sellers", color = Color.White)
+                Text("Best Sellers", color = Color.Black)
                 Spacer(modifier = Modifier.width(8.dp))
                 Switch(
                     checked = state.showBestSellers,
@@ -211,6 +211,25 @@ fun HomeScreen(navController: NavController) {
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        // Products count
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "Total Products:",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.Black
+
+            )
+            Spacer(modifier = Modifier.width(5.dp))
+            Text(
+                text = "${filteredProducts.size}",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = Color(0xFF5A9280)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Product Grid
         LazyVerticalGrid(
@@ -251,7 +270,7 @@ fun ProductCard(product: Product, navController: NavController) {
                             painter = rememberAsyncImagePainter(model = product.imageUrl),
                             contentDescription = product.name,
                             modifier = Modifier
-                                .size(80.dp)
+                                .size(100.dp)
                                 .clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop
 
@@ -261,7 +280,7 @@ fun ProductCard(product: Product, navController: NavController) {
                             painter = painterResource(id = R.drawable.ic_coffee),
                             contentDescription = product.name,
                             modifier = Modifier
-                                .size(80.dp)
+                                .size(100.dp)
                                 .clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop
                         )

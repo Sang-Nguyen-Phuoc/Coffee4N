@@ -35,7 +35,7 @@ class UserRepository(
     }
 
     suspend fun updateUser(user: User) {
-        userDao.insertUser(user)
+        userDao.updateUser(user)
         firebaseDatabase.getReference("users").child(user.id.toString()).setValue(user).await()
     }
 
