@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -26,6 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -40,6 +43,7 @@ import com.example.coffee4n.ui.favorites.FavoritesScreen
 import com.example.coffee4n.ui.home.HomeScreen
 import com.example.coffee4n.ui.login.LoginScreen
 import com.example.coffee4n.ui.notifications.NotificationsScreen
+import com.example.coffee4n.ui.orders.OrdersScreen
 import com.example.coffee4n.ui.product_details.ProductDetailsScreen
 import com.example.coffee4n.ui.profile.ProfileScreen
 import com.example.coffee4n.ui.signup.SignupScreen
@@ -82,7 +86,7 @@ fun AppNavHost(startDestination: String) {
                     NavigationBar {
                         NavigationBarItem(
                             icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                            label = { Text("Home") },
+                            label = { Text("Home", fontSize = 10.sp) },
                             selected = currentRoute == Destinations.HOME,
                             onClick = {
                                 navController.navigate(Destinations.HOME) {
@@ -94,21 +98,8 @@ fun AppNavHost(startDestination: String) {
                             }
                         )
                         NavigationBarItem(
-                            icon = { Icon(Icons.Default.Favorite, contentDescription = "Favorites") },
-                            label = { Text("Favorites") },
-                            selected = currentRoute == Destinations.FAVORITES,
-                            onClick = {
-                                navController.navigate(Destinations.FAVORITES) {
-                                    popUpTo(Destinations.HOME) {
-                                        inclusive = false
-                                    }
-                                    launchSingleTop = true
-                                }
-                            }
-                        )
-                        NavigationBarItem(
                             icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Cart") },
-                            label = { Text("Cart") },
+                            label = { Text("Cart", fontSize = 10.sp) },
                             selected = currentRoute == Destinations.CART,
                             onClick = {
                                 val userId = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -127,8 +118,21 @@ fun AppNavHost(startDestination: String) {
                             }
                         )
                         NavigationBarItem(
+                            icon = { Icon(Icons.Default.Receipt, contentDescription = "Orders") },
+                            label = { Text("Orders", fontSize = 10.sp) },
+                            selected = currentRoute == Destinations.ORDERS,
+                            onClick = {
+                                navController.navigate(Destinations.ORDERS) {
+                                    popUpTo(Destinations.HOME) {
+                                        inclusive = false
+                                    }
+                                    launchSingleTop = true
+                                }
+                            }
+                        )
+                        NavigationBarItem(
                             icon = { Icon(Icons.Default.Notifications, contentDescription = "Notifications") },
-                            label = { Text("Notifications") },
+                            label = { Text("Notifications", fontSize = 10.sp) },
                             selected = currentRoute == Destinations.NOTIFICATIONS,
                             onClick = {
                                 navController.navigate(Destinations.NOTIFICATIONS) {
@@ -141,7 +145,7 @@ fun AppNavHost(startDestination: String) {
                         )
                         NavigationBarItem(
                             icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-                            label = { Text("Profile") },
+                            label = { Text("Profile", fontSize = 10.sp) },
                             selected = currentRoute == Destinations.PROFILE,
                             onClick = {
                                 navController.navigate(Destinations.PROFILE) {
@@ -171,6 +175,7 @@ fun AppNavHost(startDestination: String) {
                     composable(Destinations.LOGIN) { LoginScreen(navController) }
                     composable(Destinations.SIGNUP) { SignupScreen(navController) }
                     composable(Destinations.HOME) { HomeScreen(navController) }
+                    composable(Destinations.ORDERS) { OrdersScreen(navController) }
                     composable(Destinations.FAVORITES) { FavoritesScreen(navController) }
                     composable(Destinations.CART) {
                         CartScreen(navController = navController)

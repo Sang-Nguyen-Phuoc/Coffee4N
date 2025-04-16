@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
 
 
         // Determine start destination based on auth status
-        var startDestination = if (isFirstTime) {
+        var startDestination = if (isFirstTime || authToken == null) {
             Destinations.WELCOME
         } else if (authToken != null && userId != 0) {
             // Initialize Firebase Auth if using token validation
@@ -62,9 +62,9 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    AppNavHost(startDestination = startDestination)
+//                    AppNavHost(startDestination = startDestination)
 //                    OwnerNavHost(startDestination = Destinations.OWNER_PRODUCTS)
-//                    AppNavHost(startDestination = Destinations.HOME)
+                    AppNavHost(startDestination = Destinations.HOME)
                 }
             }
         }

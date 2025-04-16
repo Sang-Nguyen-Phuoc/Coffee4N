@@ -7,6 +7,7 @@ object Destinations {
     const val SIGNUP = "signup"
     const val HOME = "home"
     const val FAVORITES = "favorites"
+    const val ORDERS = "orders"
     const val CART = "cart"
     const val NOTIFICATIONS = "notifications"
     const val CHECKOUT = "checkout"

@@ -31,7 +31,7 @@ import java.util.*
         Attendance::class,
         Booking::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
