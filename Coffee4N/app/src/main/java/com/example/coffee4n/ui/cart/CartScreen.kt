@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,13 +26,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.CartItemRepository
 import com.example.coffee4n.repository.ProductRepository
@@ -202,6 +203,7 @@ fun CartScreen(navController: NavController) {
                                     item = item,
                                     onUpdateQuantity = { newQty -> viewModel.updateQuantity(item, newQty) },
                                     onRemove = { viewModel.removeItem(item) },
+                                    onUpdateNote = { newNote -> viewModel.updateCartItemNote(item, newNote) },
                                     isOutOfStock = state.outOfStockItems.contains(item.product.id)
                                 )
                             }
@@ -246,8 +248,22 @@ fun CartItemCard(
     item: CartItemWithProduct,
     onUpdateQuantity: (Int) -> Unit,
     onRemove: () -> Unit,
+    onUpdateNote: (String?) -> Unit,
     isOutOfStock: Boolean
 ) {
+    var showNoteDialog by remember { mutableStateOf(false) }
+
+    if (showNoteDialog) {
+        NoteDialog(
+            currentNote = item.cartItem.note,
+            onConfirm = { newNote ->
+                onUpdateNote(newNote)
+                showNoteDialog = false
+            },
+            onDismiss = { showNoteDialog = false }
+        )
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -292,8 +308,30 @@ fun CartItemCard(
                         item.product.name,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
-                        maxLines = 2,
+                        maxLines = 1,
                         color = Color.White
+                    )
+                    item.cartItem.note?.takeIf { it.isNotBlank() }?.let { note ->
+                        Text(
+                            "Note: $note",
+                            fontWeight = FontWeight.Medium,
+                            fontStyle = FontStyle.Italic,
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            color = Color.White.copy(alpha = 0.8f),
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .clickable { showNoteDialog = true }
+                        )
+                    } ?: Text(
+                        "Add note",
+                        fontWeight = FontWeight.Medium,
+                        fontStyle = FontStyle.Italic,
+                        fontSize = 14.sp,
+                        color = Color.White.copy(alpha = 0.6f),
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .clickable { showNoteDialog = true }
                     )
                     if (isOutOfStock) {
                         Text(
@@ -356,6 +394,38 @@ fun CartItemCard(
             }
         }
     }
+}
+
+@Composable
+fun NoteDialog(
+    currentNote: String?,
+    onConfirm: (String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var note by remember { mutableStateOf(currentNote ?: "") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Note") },
+        text = {
+            OutlinedTextField(
+                value = note,
+                onValueChange = { note = it },
+                label = { Text("Special Request (e.g., No sugar)") },
+                modifier = Modifier.fillMaxWidth(),
+                maxLines = 3
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(note.takeIf { it.isNotBlank() }) }) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

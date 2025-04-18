@@ -10,11 +10,22 @@ import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 
 class OrderItemRepository(
     private val firebaseDatabase: FirebaseDatabase
 ) {
-    // Các hàm hiện có giữ nguyên ...
+    suspend fun addOrderItem(orderItem: OrderItem) {
+        val snapshot = firebaseDatabase.getReference("orderitems").get().await()
+        val orderItems = snapshot.children.mapNotNull { it.getValue(OrderItem::class.java) }.toMutableList()
+        val existingIndex = orderItems.indexOfFirst { it.id == orderItem.id && it.orderId == orderItem.orderId }
+        if (existingIndex != -1) {
+            orderItems[existingIndex] = orderItem
+        } else {
+            orderItems.add(orderItem)
+        }
+        firebaseDatabase.getReference("orderitems").setValue(orderItems).await()
+    }
 
     fun getMostOrderedItemsFlow(limit: Int = 5): Flow<List<OrderItemStat>> = callbackFlow {
         val orderItemsReference = firebaseDatabase.getReference("orderitems")

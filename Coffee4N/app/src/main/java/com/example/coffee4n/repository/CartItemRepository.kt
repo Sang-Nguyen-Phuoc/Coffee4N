@@ -2,7 +2,6 @@ package com.example.coffee4n.repository
 
 import com.example.coffee4n.model.CartItem
 import com.example.coffee4n.model.Product
-import com.example.coffee4n.model.database.CartItemDao
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -70,4 +69,14 @@ class CartItemRepository(
         firebaseDatabase.getReference("cartitems").setValue(updatedCartItems).await()
     }
 
+    suspend fun updateCartItemNote(id: Int, userId: Int, newNote: String?) {
+        val snapshot = firebaseDatabase.getReference("cartitems").get().await()
+        val cartItems = snapshot.children.mapNotNull { it.getValue(CartItem::class.java) }.toMutableList()
+        val index = cartItems.indexOfFirst { it.id == id && it.userId == userId }
+        if (index != -1) {
+            val updatedItem = cartItems[index].copy(note = newNote)
+            cartItems[index] = updatedItem
+            firebaseDatabase.getReference("cartitems").setValue(cartItems).await()
+        }
+    }
 }

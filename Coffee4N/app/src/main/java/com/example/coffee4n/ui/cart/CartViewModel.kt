@@ -80,6 +80,25 @@ class CartViewModel(
         }
     }
 
+    fun updateCartItemNote(cartItem: CartItemWithProduct, newNote: String?) {
+        viewModelScope.launch {
+            try {
+                cartItemRepository.updateCartItemNote(
+                    cartItem.cartItem.id,
+                    cartItem.cartItem.userId,
+                    newNote
+                )
+                _state.value = _state.value.copy(
+                    successMessage = "Đã cập nhật ghi chú cho ${cartItem.product.name}"
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    error = "Không thể cập nhật ghi chú: ${e.message}"
+                )
+            }
+        }
+    }
+
     private fun updateUIFromCartItems(cartItems: List<CartItem>) {
         viewModelScope.launch {
             if (cartItems.isEmpty()) {
