@@ -55,11 +55,9 @@ fun CheckoutScreen(navController: NavController) {
     )
     val productRepository = ProductRepository(FirebaseDatabase.getInstance())
     val promotionRepository = PromotionRepository(
-        promotionDao = database.promotionDao(),
         firebaseDatabase = FirebaseDatabase.getInstance()
     )
     val orderRepository = OrderRepository(
-        orderDao = database.orderDao(),
         firebaseDatabase = FirebaseDatabase.getInstance()
     )
     val orderItemRepository = OrderItemRepository(

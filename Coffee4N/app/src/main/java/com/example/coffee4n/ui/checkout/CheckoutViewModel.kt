@@ -109,30 +109,57 @@ class CheckoutViewModel(
 
     fun checkout(onSuccess: () -> Unit) {
         viewModelScope.launch {
-            val cartState = cartViewModel.state.value
-            val orderId = Random.nextInt(1000000)
-            val order = Order(
-                id = orderId,
-                userId = userId,
-                orderDate = Date(),
-                status = "PENDING",
-                totalAmount = _state.value.finalTotal,
-                deliveryMethod = "PICKUP",
-                promotionId = _state.value.appliedPromotion?.id
-            )
-            orderRepository.addOrder(order)
+            try {
+                val cartState = cartViewModel.state.value
+                if (cartState.cartItems.isEmpty()) {
+                    _state.update {
+                        it.copy(
+                            errorMessage = "Giỏ hàng rỗng, không thể thanh toán",
+                            showConfirmDialog = false
+                        )
+                    }
+                    return@launch
+                }
 
-            cartState.cartItems.forEachIndexed { index, item ->
-                val orderItem = OrderItem(
-                    id = index,
-                    orderId = orderId,
-                    productId = item.product.id,
-                    quantity = item.cartItem.quantity,
-                    price = item.product.price
+                val orderId = Random.nextInt(1000000)
+                val order = Order(
+                    id = orderId,
+                    userId = userId,
+                    orderDate = Date(),
+                    status = "PENDING",
+                    totalAmount = _state.value.finalTotal,
+                    deliveryMethod = "PICKUP",
+                    promotionId = _state.value.appliedPromotion?.id
                 )
+                orderRepository.addOrder(order)
+
+                cartState.cartItems.forEachIndexed { index, item ->
+                    val orderItem = OrderItem(
+                        id = index,
+                        orderId = orderId,
+                        productId = item.product.id,
+                        quantity = item.cartItem.quantity,
+                        price = item.product.price
+                    )
+                    orderItemRepository.addOrderItem(orderItem)
+                }
+
+                cartViewModel.clearCart()
+                _state.update {
+                    it.copy(
+                        successMessage = "Thanh toán thành công! Đơn hàng #$orderId đã được tạo.",
+                        showConfirmDialog = false
+                    )
+                }
+                onSuccess()
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        errorMessage = "Lỗi khi thanh toán: ${e.message}",
+                        showConfirmDialog = false
+                    )
+                }
             }
-            cartViewModel.clearCart()
-            onSuccess()
         }
     }
 
