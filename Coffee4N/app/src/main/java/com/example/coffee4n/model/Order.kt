@@ -6,11 +6,11 @@ import java.util.Date
 
 @Entity(tableName = "order")
 data class Order(
-    @PrimaryKey val id: Int,
-    val userId: Int,
-    val orderDate: Date,
-    val status: String,
-    val totalAmount: Double,
-    val deliveryMethod: String,
-    val promotionId: Int?
+    @PrimaryKey val id: Int = 0,
+    val userId: Int = 0,
+    val orderDate: Date? = null,
+    val status: String = "",
+    val totalAmount: Double = 0.0,
+    val deliveryMethod: String = "",
+    val promotionId: Int? = null
 )

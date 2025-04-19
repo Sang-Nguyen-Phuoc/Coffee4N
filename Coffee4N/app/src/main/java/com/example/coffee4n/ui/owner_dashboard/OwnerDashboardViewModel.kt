@@ -26,13 +26,6 @@ class OwnerDashboardViewModel : ViewModel() {
     }
 
     private fun loadDashboardData() {
-        // Tải dữ liệu các mục được đặt hàng nhiều nhất
-        viewModelScope.launch {
-            orderItemRepository.getMostOrderedItemsFlow(5).collectLatest { orderItemStats ->
-                _state.value = _state.value.copy(orderItemStats = orderItemStats)
-            }
-        }
-
         // Tải thông tin sản phẩm để kiểm tra hàng tồn kho thấp
         viewModelScope.launch {
             productRepository.getProductsFlow().collectLatest { products ->

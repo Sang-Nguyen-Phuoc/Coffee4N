@@ -22,6 +22,7 @@ object Destinations {
     const val OWNER_EMPLOYEES = "owner_employees"
     const val OWNER_ANALYTICS = "owner_analytics"
     const val OWNER_TABLES = "owner_tables"
+    const val OWNER_INSIGHTS = "owner_insights"
 
     // For creating navigation routes with parameters
     const val PRODUCT_DETAILS = "product_details/{productId}"
