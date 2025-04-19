@@ -170,6 +170,7 @@ fun AddTransactionDialog(
                             onUnitPriceChange(unitPrice.value.toDoubleOrNull() ?: 0.0)
                         },
                         label = { Text("Price/${ingredient.unit}") },
+                        prefix = { Text("$")},
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
