@@ -2,9 +2,7 @@ package com.example.coffee4n.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Coffee
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Receipt
@@ -14,8 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -23,7 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.coffee4n.ui.owner_dashboard.OwnerDashboardScreen
 import com.example.coffee4n.ui.owner_employee.OwnerEmployeeScreen
 import com.example.coffee4n.ui.owner_table.OwnerTableScreen
-import androidx.compose.ui.unit.sp
+import com.example.coffee4n.ui.owner_inventory.OwnerInventoryScreen
 import com.example.coffee4n.ui.owner_product.OwnerProductScreen
 
 
@@ -162,9 +158,7 @@ fun OwnerNavHost(startDestination: String = Destinations.OWNER_ORDERS) {
             composable(Destinations.OWNER_ORDERS) {
                 Text("Orders Placeholder", color = Color(0xFF313131), modifier = Modifier.padding(innerPadding))
             }
-            composable(Destinations.OWNER_INVENTORY) {
-                Text("Inventory Placeholder", color = Color(0xFF313131), modifier = Modifier.padding(innerPadding))
-            }
+            composable(Destinations.OWNER_INVENTORY) { OwnerInventoryScreen() }
             composable(Destinations.OWNER_EMPLOYEES) { OwnerEmployeeScreen() }
 
             composable(Destinations.OWNER_TABLES) { OwnerTableScreen() }
