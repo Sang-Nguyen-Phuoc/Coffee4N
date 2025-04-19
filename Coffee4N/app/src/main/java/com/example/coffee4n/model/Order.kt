@@ -6,7 +6,7 @@ import java.util.Date
 
 @Entity(tableName = "order")
 data class Order(
-    @PrimaryKey val id: Int = 0,
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val userId: Int = 0,
     val orderDate: Date? = null,
     val status: String = "",
