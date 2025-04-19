@@ -34,6 +34,11 @@ class IngredientRepository(
         awaitClose { ingredientRef.removeEventListener(listener) }
     }
 
+    suspend fun getIngredient(id: Int) : Ingredient? {
+        val snapshot = ingredientRef.child(id.toString()).get().await()
+        return snapshot.getValue(Ingredient::class.java)
+    }
+
     suspend fun addIngredient(ingredient: Ingredient) {
         val newId = getNextIngredientId()
         val newIngredient = ingredient.copy(id = newId)

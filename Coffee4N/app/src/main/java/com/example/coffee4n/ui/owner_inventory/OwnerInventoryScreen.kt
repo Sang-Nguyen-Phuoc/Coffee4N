@@ -11,8 +11,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -40,6 +38,13 @@ fun OwnerInventoryScreen() {
     )
 
     var selectedTabIndex by remember { mutableStateOf(0) }
+    var selectedIngredientName: String = ""
+
+    fun navigateToIngredientTransactions(name: String) {
+        selectedIngredientName = name
+        selectedTabIndex = 1
+    }
+
     val tabTitles = listOf("Ingredients", "Transactions")
 
     Scaffold(
@@ -86,7 +91,10 @@ fun OwnerInventoryScreen() {
                 tabTitles.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
+                        onClick = {
+                            selectedIngredientName = ""
+                            selectedTabIndex = index
+                        },
                         text = {
                             Text(
                                 text = title,
@@ -100,8 +108,8 @@ fun OwnerInventoryScreen() {
             }
 
             when (selectedTabIndex) {
-                0 -> IngredientTab()
-                1 -> TransactionTab()
+                0 -> IngredientTab(onIngredientSelected = { name -> navigateToIngredientTransactions(name)})
+                1 -> TransactionTab(selectedIngredientName)
             }
         }
     }

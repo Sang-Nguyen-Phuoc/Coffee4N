@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,7 +21,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
@@ -35,12 +34,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,7 +58,9 @@ import com.example.coffee4n.model.TransactionType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun IngredientTab() {
+fun IngredientTab(
+    onIngredientSelected: (String) -> Unit
+) {
     val context = LocalContext.current
     val viewModel: IngredientTabViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -101,10 +99,23 @@ fun IngredientTab() {
                     onValueChange = { viewModel.updateSearchQuery(it) },
                     placeholder = { Text("Search ingredient") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(8.dp))
+                    modifier = Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(8.dp)),
+                    trailingIcon = {
+                        if (state.searchQuery.isNotEmpty()) {
+                            IconButton(onClick = {
+                                viewModel.updateSearchQuery("")
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Cancel,
+                                    contentDescription = "Clear search",
+                                    tint = Color.Gray
+                                )
+                            }
+                        }
+                    }
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -124,7 +135,7 @@ fun IngredientTab() {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 LazyColumn(
                     modifier = Modifier
@@ -133,18 +144,29 @@ fun IngredientTab() {
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     items(filteredIngredients) { ingredient ->
-                        IngredientCard(
-                            ingredient = ingredient,
-                            onShowAddTransactionDialog = { selectedIngredient, type ->
-                                viewModel.showAddTransactionDialog(selectedIngredient, type)
-                            },
-                            onShowEditIngredientDialog = { selectedIngredient ->
-                                viewModel.showAddEditIngredientDialog(isNew = false, ingredient = selectedIngredient)
-                            },
-                            onShowConfirmDeleteIngreDientDialog = { seletedIngredient ->
-                                viewModel.showConfirmDeleteIngredientDialog(ingredient)
-                            }
-                        )
+                        Button(
+                            onClick = {onIngredientSelected(ingredient.name)},
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = Color.Unspecified
+                            ),
+                            elevation = null,
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RectangleShape
+                        ) {
+                            IngredientCard(
+                                ingredient = ingredient,
+                                onShowAddTransactionDialog = { selectedIngredient, type ->
+                                    viewModel.showAddTransactionDialog(selectedIngredient, type)
+                                },
+                                onShowEditIngredientDialog = { selectedIngredient ->
+                                    viewModel.showAddEditIngredientDialog(isNew = false, ingredient = selectedIngredient)
+                                },
+                                onShowConfirmDeleteIngreDientDialog = { seletedIngredient ->
+                                    viewModel.showConfirmDeleteIngredientDialog(ingredient)
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -204,8 +226,8 @@ fun IngredientCard(
     onShowConfirmDeleteIngreDientDialog: (Ingredient) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(4.dp).shadow(4.dp, RoundedCornerShape(8.dp)),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFECE4DB))
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp).shadow(4.dp, RoundedCornerShape(8.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFD8E2DC))
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
@@ -226,12 +248,14 @@ fun IngredientCard(
                 Text(
                     text = "Quantity: ${ingredient.quantity} (${ingredient.unit})",
                     style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Black
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Row {
                     Text(
                         text = "Status: ",
                         style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black
                     )
 
                     val stockColor = when {
