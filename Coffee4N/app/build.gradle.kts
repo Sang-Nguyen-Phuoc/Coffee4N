@@ -1,3 +1,19 @@
+import java.io.FileInputStream
+import java.util.Properties
+
+// Function to read the API key from local.properties
+fun getApiKeyFromLocalProperties(): String {
+    val properties = Properties()
+    val localPropertiesFile = project.rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        FileInputStream(localPropertiesFile).use { fis ->
+            properties.load(fis)
+            return properties.getProperty("GEMINI_API_KEY") ?: ""
+        }
+    }
+    return "" // Fallback for CI or other environments
+}
+
 plugins {
     id("com.android.application") version "8.8.1"
     id("org.jetbrains.kotlin.android") version "2.0.0"
@@ -21,7 +37,7 @@ android {
         buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"${project.property("CLOUDINARY_CLOUD_NAME")}\"")
         buildConfigField("String", "CLOUDINARY_API_KEY", "\"${project.property("CLOUDINARY_API_KEY")}\"")
         buildConfigField("String", "CLOUDINARY_API_SECRET", "\"${project.property("CLOUDINARY_API_SECRET")}\"")
-        buildConfigField("String", "GEMINI_API_KEY", "\"AIzaSyD3cJpW9QROt5rTJ7bnqD9SRun8Cz-aRxo\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"${getApiKeyFromLocalProperties()}\"")
     }
 
     buildTypes {
