@@ -18,21 +18,33 @@ class OrderRepository(
     private val firebaseDatabase: FirebaseDatabase
 ) {
     suspend fun addOrder(order: Order) {
-        try {
-            firebaseDatabase.getReference("orders").child(order.id.toString()).setValue(order).await()
-        } catch (e: Exception) {
-            throw Exception("Không thể thêm đơn hàng: ${e.message}")
-        }
+        firebaseDatabase.getReference("orders").child(order.id.toString()).setValue(order).await()
     }
 
-    suspend fun getOrdersByUser(userId: Int): List<Order> {
-        try {
-            val snapshot = firebaseDatabase.getReference("orders").get().await()
-            val orders = snapshot.children.mapNotNull { it.getValue(Order::class.java) }
-            return orders.filter { it.userId == userId }
-        } catch (e: Exception) {
-            throw Exception("Không thể lấy đơn hàng: ${e.message}")
+    fun getOrdersByUser(userId: Int): Flow<List<Order>> = callbackFlow {
+        val ordersReference = firebaseDatabase.getReference("orders")
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val orders = snapshot.children.mapNotNull { it.getValue(Order::class.java) }
+                    .filter { it.userId == userId }
+                trySend(orders).isSuccess
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
         }
+        ordersReference.addValueEventListener(listener)
+        awaitClose { ordersReference.removeEventListener(listener) }
+    }
+
+    suspend fun updateOrderStatus(orderId: Int, status: String) {
+        firebaseDatabase.getReference("orders").child(orderId.toString())
+            .child("status").setValue(status).await()
+    }
+
+    suspend fun deleteOrder(orderId: Int) {
+        firebaseDatabase.getReference("orders").child(orderId.toString()).removeValue().await()
     }
 
     fun getRevenueByDayFlow(): Flow<List<DailyRevenue>> = callbackFlow {

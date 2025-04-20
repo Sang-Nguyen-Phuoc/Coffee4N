@@ -58,8 +58,8 @@ fun AppNavHost(startDestination: String = Destinations.HOME) {
     val currentRoute = currentBackStackEntry?.destination?.route
     val showBottomBar = currentRoute in listOf(
         Destinations.HOME,
-        Destinations.FAVORITES,
         Destinations.CART,
+        Destinations.ORDERS,
         Destinations.NOTIFICATIONS,
         Destinations.PROFILE,
         Destinations.BOOKING_TABLE

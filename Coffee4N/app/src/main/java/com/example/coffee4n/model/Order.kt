@@ -6,11 +6,13 @@ import java.util.Date
 
 @Entity(tableName = "order")
 data class Order(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey val id: Int,
     val userId: Int = 0,
-    val orderDate: Date? = null,
-    val status: String = "",
+    val orderDate: Date = Date(),
     val totalAmount: Double = 0.0,
-    val deliveryMethod: String = "",
-    val promotionId: Int? = null
-)
+    val status: String = "PENDING",
+    val deliveryMethod: String = ""
+) {
+    // Thêm constructor không tham số cho Firebase
+    constructor() : this(0, 0, Date(), 0.0, "PENDING", "")
+}
