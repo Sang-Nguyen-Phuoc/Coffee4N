@@ -12,6 +12,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,7 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.coffee4n.model.Promotion
-import com.example.coffee4n.model.database.AppDatabase
+import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.CartItemRepository
 import com.example.coffee4n.repository.OrderItemRepository
 import com.example.coffee4n.repository.OrderRepository
@@ -39,7 +41,6 @@ import com.example.coffee4n.ui.cart.CartItemWithProduct
 import com.example.coffee4n.ui.cart.CartViewModel
 import com.example.coffee4n.ui.cart.CartViewModelFactory
 import com.google.firebase.database.FirebaseDatabase
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,29 +49,17 @@ fun CheckoutScreen(navController: NavController) {
     val userId = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         .getInt("userId", 0)
 
-    // Khởi tạo RoomDB
-    val database = AppDatabase.getDatabase(context)
-    val cartItemRepository = CartItemRepository(
-        firebaseDatabase = FirebaseDatabase.getInstance()
-    )
+    val cartItemRepository = CartItemRepository(FirebaseDatabase.getInstance())
     val productRepository = ProductRepository(FirebaseDatabase.getInstance())
-    val promotionRepository = PromotionRepository(
-        firebaseDatabase = FirebaseDatabase.getInstance()
-    )
-    val orderRepository = OrderRepository(
-        firebaseDatabase = FirebaseDatabase.getInstance()
-    )
-    val orderItemRepository = OrderItemRepository(
-        firebaseDatabase = FirebaseDatabase.getInstance()
-    )
+    val promotionRepository = PromotionRepository(FirebaseDatabase.getInstance())
+    val orderRepository = OrderRepository(FirebaseDatabase.getInstance())
+    val orderItemRepository = OrderItemRepository(FirebaseDatabase.getInstance())
 
-    // Khởi tạo CartViewModel
     val cartViewModel: CartViewModel = viewModel(
         factory = CartViewModelFactory(cartItemRepository, productRepository, userId)
     )
     val cartState by cartViewModel.state.collectAsState()
 
-    // Khởi tạo CheckoutViewModel
     val checkoutViewModel: CheckoutViewModel = viewModel(
         factory = CheckoutViewModelFactory(
             cartViewModel = cartViewModel,
@@ -82,59 +71,79 @@ fun CheckoutScreen(navController: NavController) {
     )
     val checkoutState by checkoutViewModel.state.collectAsState()
 
-    val snackbarHostState = remember { SnackbarHostState() }
+    var selectedDeliveryMethod by remember { mutableStateOf("PICKUP") }
 
-    // Hiển thị thông báo thành công
-    checkoutState.successMessage?.let { message ->
-        LaunchedEffect(message) {
-            snackbarHostState.showSnackbar(message)
-            checkoutViewModel.clearSuccessMessage()
-            delay(1000L)
-            navController.navigate("home") {
-                popUpTo(navController.graph.startDestinationId) { inclusive = true }
-            }
-        }
-    }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            "CHECKOUT",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF3E2723)
-                        )
-                    }
+                    Text(
+                        "CHECKOUT",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6B4E31)
+                    )
                 },
                 navigationIcon = {
                     IconButton(
                         onClick = { navController.popBackStack() },
                         modifier = Modifier
-                            .padding(start = 16.dp)
-                            .size(40.dp)
+                            .padding(start = 8.dp)
+                            .size(32.dp)
                     ) {
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF3E2723),
-                            modifier = Modifier.size(24.dp)
+                            tint = Color(0xFF6B4E31),
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color(0xFF3E2723),
-                    navigationIconContentColor = Color(0xFF3E2723)
+                    containerColor = Color(0xFFFAF3E0),
+                    titleContentColor = Color(0xFF6B4E31),
+                    navigationIconContentColor = Color(0xFF6B4E31)
                 ),
                 modifier = Modifier
+                    .height(56.dp)
                     .shadow(4.dp)
             )
         },
+        bottomBar = {
+            NavigationBar(
+                containerColor = Color(0xFFFAF3E0),
+                contentColor = Color(0xFF6B4E31)
+            ) {
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { navController.navigate(Destinations.HOME) },
+                    icon = {
+                        Icon(
+                            Icons.Default.Home,
+                            contentDescription = "Home",
+                            tint = Color(0xFF6B4E31)
+                        )
+                    },
+                    label = { Text("Home", color = Color(0xFF6B4E31)) }
+                )
+                NavigationBarItem(
+                    selected = true,
+                    onClick = { navController.navigate(Destinations.CART) },
+                    icon = {
+                        Icon(
+                            Icons.Default.ShoppingCart,
+                            contentDescription = "Cart",
+                            tint = Color(0xFF6B4E31)
+                        )
+                    },
+                    label = { Text("Cart", color = Color(0xFF6B4E31)) }
+                )
+            }
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color(0xFFF5F5F5)
+        containerColor = Color(0xFFF5E8C7)
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -149,7 +158,7 @@ fun CheckoutScreen(navController: NavController) {
             ) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(
-                        color = Color(0xFFD4A373),
+                        color = Color(0xFF6B4E31),
                         strokeWidth = 4.dp
                     )
                 }
@@ -185,7 +194,7 @@ fun CheckoutScreen(navController: NavController) {
                         text = "Your cart is empty",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF757575)
+                        color = Color(0xFF8D7A55)
                     )
                 }
             }
@@ -206,7 +215,7 @@ fun CheckoutScreen(navController: NavController) {
                         items(cartState.cartItems) { item ->
                             CartItemCard(
                                 item = item,
-                                isOutOfStock = false
+                                isOutOfStock = item.product.stockQuantity < item.cartItem.quantity
                             )
                         }
                     }
@@ -219,7 +228,57 @@ fun CheckoutScreen(navController: NavController) {
                         finalTotal = checkoutState.finalTotal
                     )
 
-                    // Phần nhập voucher
+                    Text(
+                        "Delivery Method",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF6B4E31),
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            RadioButton(
+                                selected = selectedDeliveryMethod == "PICKUP",
+                                onClick = { selectedDeliveryMethod = "PICKUP" },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = Color(0xFF6B4E31),
+                                    unselectedColor = Color(0xFF8D7A55)
+                                )
+                            )
+                            Text(
+                                "Pickup",
+                                fontSize = 14.sp,
+                                color = Color(0xFF6B4E31)
+                            )
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            RadioButton(
+                                selected = selectedDeliveryMethod == "SHIPPING",
+                                onClick = { selectedDeliveryMethod = "SHIPPING" },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = Color(0xFF6B4E31),
+                                    unselectedColor = Color(0xFF8D7A55)
+                                )
+                            )
+                            Text(
+                                "Shipping",
+                                fontSize = 14.sp,
+                                color = Color(0xFF6B4E31)
+                            )
+                        }
+                    }
+
                     OutlinedTextField(
                         value = checkoutState.voucherCode,
                         onValueChange = { checkoutViewModel.updateVoucherCode(it) },
@@ -229,10 +288,11 @@ fun CheckoutScreen(navController: NavController) {
                             .padding(top = 16.dp),
                         enabled = !checkoutState.isApplyingVoucher,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFFD4A373),
-                            unfocusedBorderColor = Color(0xFF757575),
-                            focusedLabelColor = Color(0xFFD4A373),
-                            cursorColor = Color(0xFFD4A373)
+                            focusedBorderColor = Color(0xFF6B4E31),
+                            unfocusedBorderColor = Color(0xFF8D7A55),
+                            focusedLabelColor = Color(0xFF6B4E31),
+                            unfocusedLabelColor = Color(0xFF8D7A55),
+                            cursorColor = Color(0xFF6B4E31)
                         )
                     )
                     Button(
@@ -244,7 +304,7 @@ fun CheckoutScreen(navController: NavController) {
                             .shadow(8.dp, RoundedCornerShape(16.dp)),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFD4A373),
+                            containerColor = Color(0xFF6B4E31),
                             disabledContainerColor = Color(0xFFB0BEC5)
                         ),
                         enabled = !checkoutState.isApplyingVoucher
@@ -273,7 +333,6 @@ fun CheckoutScreen(navController: NavController) {
                         )
                     }
 
-                    // Nút Checkout
                     Button(
                         onClick = { checkoutViewModel.showConfirmDialog() },
                         modifier = Modifier
@@ -283,7 +342,7 @@ fun CheckoutScreen(navController: NavController) {
                             .shadow(8.dp, RoundedCornerShape(16.dp)),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFD4A373),
+                            containerColor = Color(0xFF6B4E31),
                             disabledContainerColor = Color(0xFFB0BEC5)
                         ),
                         enabled = cartState.cartItems.isNotEmpty()
@@ -299,7 +358,6 @@ fun CheckoutScreen(navController: NavController) {
             }
         }
 
-        // Dialog xác nhận
         if (checkoutState.showConfirmDialog) {
             AlertDialog(
                 onDismissRequest = { checkoutViewModel.hideConfirmDialog() },
@@ -307,18 +365,24 @@ fun CheckoutScreen(navController: NavController) {
                 text = { Text("Total price: $${"%.2f".format(checkoutState.finalTotal)}") },
                 confirmButton = {
                     TextButton(onClick = {
-                        checkoutViewModel.checkout {
+                        checkoutViewModel.checkout(selectedDeliveryMethod) {
                             checkoutViewModel.hideConfirmDialog()
+                            navController.navigate(Destinations.HOME) {
+                                popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                            }
                         }
                     }) {
-                        Text("Yes")
+                        Text("Yes", color = Color(0xFF6B4E31))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { checkoutViewModel.hideConfirmDialog() }) {
-                        Text("No")
+                        Text("No", color = Color(0xFF8D7A55))
                     }
-                }
+                },
+                containerColor = Color(0xFFFAF3E0),
+                titleContentColor = Color(0xFF6B4E31),
+                textContentColor = Color(0xFF6B4E31)
             )
         }
     }
@@ -341,7 +405,6 @@ fun CartItemCard(
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Hình ảnh sản phẩm
             Image(
                 painter = rememberAsyncImagePainter(
                     model = item.product.imageUrl.ifEmpty { "https://fastly.picsum.photos/id/1011/200/200.jpg?hmac=ISwJXaLKDOtBGE_n3myoHUev_P_OH3zpWqLx0yHp0pY" }
@@ -353,7 +416,6 @@ fun CartItemCard(
                 contentScale = ContentScale.Crop
             )
 
-            // Lớp phủ mờ
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -368,7 +430,6 @@ fun CartItemCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Thông tin sản phẩm
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
@@ -395,16 +456,14 @@ fun CartItemCard(
                     )
                 }
 
-                // Tổng giá
                 Text(
                     text = "$${"%.2f".format(item.product.price * item.cartItem.quantity)}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFD4A373)
+                    color = Color(0xFF6B4E31)
                 )
             }
 
-            // Hiển thị thông báo nếu sản phẩm hết hàng
             if (isOutOfStock) {
                 Box(
                     modifier = Modifier
@@ -472,7 +531,7 @@ fun SummaryCard(
                 "Total",
                 finalTotal,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFD4A373)
+                color = Color(0xFF6B4E31)
             )
         }
     }
@@ -483,7 +542,7 @@ fun SummaryRow(
     label: String,
     value: Double,
     fontWeight: FontWeight = FontWeight.Normal,
-    color: Color = Color(0xFF3E2723)
+    color: Color = Color(0xFF6B4E31)
 ) {
     Row(
         modifier = Modifier

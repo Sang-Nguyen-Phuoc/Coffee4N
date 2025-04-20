@@ -27,29 +27,48 @@ class OrderItemRepository(
         firebaseDatabase.getReference("orderitems").setValue(orderItems).await()
     }
 
+    fun getOrderItemsByOrderId(orderId: Int): Flow<List<OrderItem>> = callbackFlow {
+        val orderItemsReference = firebaseDatabase.getReference("orderitems")
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val orderItems = snapshot.children
+                    .mapNotNull { it.getValue(OrderItem::class.java) }
+                    .filter { it.orderId == orderId }
+                trySend(orderItems).isSuccess
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        orderItemsReference.addValueEventListener(listener)
+        awaitClose { orderItemsReference.removeEventListener(listener) }
+    }
+
+    suspend fun deleteOrderItemsByOrderId(orderId: Int) {
+        val snapshot = firebaseDatabase.getReference("orderitems").get().await()
+        val orderItems = snapshot.children.mapNotNull { it.getValue(OrderItem::class.java) }
+        val filteredItems = orderItems.filter { it.orderId != orderId }
+        firebaseDatabase.getReference("orderitems").setValue(filteredItems).await()
+    }
+
     fun getMostOrderedItemsFlow(limit: Int = 5): Flow<List<OrderItemStat>> = callbackFlow {
         val orderItemsReference = firebaseDatabase.getReference("orderitems")
         val productsReference = firebaseDatabase.getReference("products")
 
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                // Lấy tất cả order items
                 val orderItems = snapshot.children.mapNotNull { it.getValue(OrderItem::class.java) }
-
-                // Đếm số lượng mỗi sản phẩm được đặt hàng
                 val productCountMap = mutableMapOf<Int, Int>()
                 orderItems.forEach { orderItem ->
                     val currentCount = productCountMap.getOrDefault(orderItem.productId, 0)
                     productCountMap[orderItem.productId] = currentCount + orderItem.quantity
                 }
 
-                // Lấy danh sách sản phẩm từ Firebase để lấy tên sản phẩm
                 productsReference.get().addOnSuccessListener { productSnapshot ->
                     val products = productSnapshot.children.mapNotNull {
                         it.getValue(Product::class.java)
                     }
-
-                    // Tạo danh sách OrderItemStat
                     val orderItemStats = productCountMap.map { (productId, count) ->
                         val product = products.find { it.id == productId }
                         OrderItemStat(
@@ -58,7 +77,6 @@ class OrderItemRepository(
                         )
                     }.sortedByDescending { it.count }
                         .take(limit)
-
                     trySend(orderItemStats).isSuccess
                 }.addOnFailureListener { exception ->
                     close(exception)

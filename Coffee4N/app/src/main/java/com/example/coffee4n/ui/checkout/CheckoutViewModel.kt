@@ -107,7 +107,7 @@ class CheckoutViewModel(
         _state.update { it.copy(showConfirmDialog = false) }
     }
 
-    fun checkout(onSuccess: () -> Unit) {
+    fun checkout(deliveryMethod: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
                 val cartState = cartViewModel.state.value
@@ -126,10 +126,9 @@ class CheckoutViewModel(
                     id = orderId,
                     userId = userId,
                     orderDate = Date(),
-                    status = "PENDING",
                     totalAmount = _state.value.finalTotal,
-                    deliveryMethod = "PICKUP",
-                    promotionId = _state.value.appliedPromotion?.id
+                    status = "PENDING",
+                    deliveryMethod = deliveryMethod
                 )
                 orderRepository.addOrder(order)
 
@@ -147,7 +146,6 @@ class CheckoutViewModel(
                 cartViewModel.clearCart()
                 _state.update {
                     it.copy(
-                        successMessage = "Thanh toán thành công! Đơn hàng #$orderId đã được tạo.",
                         showConfirmDialog = false
                     )
                 }

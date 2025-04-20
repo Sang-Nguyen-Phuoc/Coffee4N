@@ -56,8 +56,8 @@ fun AppNavHost(startDestination: String) {
     val currentRoute = currentBackStackEntry?.destination?.route
     val showBottomBar = currentRoute in listOf(
         Destinations.HOME,
-        Destinations.FAVORITES,
         Destinations.CART,
+        Destinations.ORDERS,
         Destinations.NOTIFICATIONS,
         Destinations.PROFILE,
         Destinations.BOOKING_TABLE
@@ -177,9 +177,7 @@ fun AppNavHost(startDestination: String) {
                     composable(Destinations.HOME) { HomeScreen(navController) }
                     composable(Destinations.ORDERS) { OrdersScreen(navController) }
                     composable(Destinations.FAVORITES) { FavoritesScreen(navController) }
-                    composable(Destinations.CART) {
-                        CartScreen(navController = navController)
-                    }
+                    composable(Destinations.CART) { CartScreen(navController = navController) }
                     composable(Destinations.CHECKOUT) { CheckoutScreen(navController) }
                     composable(Destinations.NOTIFICATIONS) { NotificationsScreen(navController) }
                     composable(Destinations.PROFILE) { ProfileScreen(navController) }

@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -46,7 +45,6 @@ fun CartScreen(navController: NavController) {
         .getInt("userId", 0)
 
     if (userId == 0) {
-        // Nếu userId = 0, hiển thị thông báo yêu cầu đăng nhập
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -80,7 +78,6 @@ fun CartScreen(navController: NavController) {
             }
         }
     } else {
-        // Nếu có userId, hiển thị giỏ hàng
         val cartItemRepository = CartItemRepository(
             firebaseDatabase = FirebaseDatabase.getInstance()
         )
@@ -98,7 +95,7 @@ fun CartScreen(navController: NavController) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 "YOUR CART",
-                                fontSize = 24.sp,
+                                fontSize = 30.sp, // Giảm fontSize để phù hợp
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF3E2723)
                             )
@@ -108,14 +105,14 @@ fun CartScreen(navController: NavController) {
                         IconButton(
                             onClick = { navController.popBackStack() },
                             modifier = Modifier
-                                .padding(start = 16.dp)
-                                .size(40.dp)
+                                .padding(start = 8.dp)
+                                .size(32.dp)
                         ) {
                             Icon(
                                 Icons.Default.ArrowBack,
                                 contentDescription = "Back",
                                 tint = Color(0xFF3E2723),
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(30.dp) // Giảm kích thước icon
                             )
                         }
                     },
@@ -125,6 +122,7 @@ fun CartScreen(navController: NavController) {
                         navigationIconContentColor = Color(0xFF3E2723)
                     ),
                     modifier = Modifier
+                        .height(90.dp) // Giảm chiều cao TopAppBar
                         .shadow(4.dp)
                 )
             },
@@ -208,7 +206,7 @@ fun CartScreen(navController: NavController) {
                                 )
                             }
                         }
-                        SummaryCard(state.itemTotal, state.tax, state.total)
+                        SummaryCard(total = state.total)
                         Button(
                             onClick = { navController.navigate(Destinations.CHECKOUT) },
                             modifier = Modifier
@@ -451,7 +449,7 @@ fun QuantityButton(text: String, enabled: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun SummaryCard(itemTotal: Double, tax: Double, total: Double) {
+fun SummaryCard(total: Double) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -473,13 +471,6 @@ fun SummaryCard(itemTotal: Double, tax: Double, total: Double) {
                 .padding(20.dp)
                 .fillMaxWidth()
         ) {
-            SummaryRow("Item Total", itemTotal)
-            SummaryRow("Tax (2%)", tax)
-            Divider(
-                modifier = Modifier.padding(vertical = 12.dp),
-                color = Color(0xFFE0E0E0),
-                thickness = 1.dp
-            )
             SummaryRow("Total", total, FontWeight.Bold, Color(0xFFD4A373))
         }
     }
