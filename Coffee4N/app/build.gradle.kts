@@ -21,6 +21,7 @@ android {
         buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"${project.property("CLOUDINARY_CLOUD_NAME")}\"")
         buildConfigField("String", "CLOUDINARY_API_KEY", "\"${project.property("CLOUDINARY_API_KEY")}\"")
         buildConfigField("String", "CLOUDINARY_API_SECRET", "\"${project.property("CLOUDINARY_API_SECRET")}\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"AIzaSyD3cJpW9QROt5rTJ7bnqD9SRun8Cz-aRxo\"")
     }
 
     buildTypes {
@@ -81,6 +82,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("com.google.ai.client.generativeai:generativeai:0.2.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit.v115)

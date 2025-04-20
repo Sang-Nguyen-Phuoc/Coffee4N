@@ -39,7 +39,28 @@ fun InsightsScreen(navController: NavController) {
 
     Scaffold(
         topBar = {
-
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "Business Insights",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF313131)
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF313131)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color(0xFFF9F2ED)
+                )
+            )
         }
     ) { paddingValues ->
         Column(
@@ -75,7 +96,6 @@ fun InsightsScreen(navController: NavController) {
                         color = Color(0xFF313131)
                     )
 
-                    // Replace the TextButton with IconButton using the calendar icon
                     IconButton(
                         onClick = { showPeriodSelector = true },
                         colors = IconButtonDefaults.iconButtonColors(
@@ -91,7 +111,7 @@ fun InsightsScreen(navController: NavController) {
                 }
             }
 
-            // Scrollable content with charts
+            // Scrollable content with charts and insights
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -108,12 +128,30 @@ fun InsightsScreen(navController: NavController) {
                         .padding(vertical = 4.dp)
                 )
 
+                // AI Business Insights Card
+                BusinessInsightsCard(
+                    insights = state.businessInsights,
+                    isLoading = state.isLoadingInsights,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                )
+
                 // Order Items Chart
                 OrderItemsChart(
                     orderItemStats = state.orderItemStats,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(300.dp)
+                        .padding(vertical = 4.dp)
+                )
+
+                // Product Recommendations Card
+                ProductRecommendationsCard(
+                    recommendations = state.productRecommendations,
+                    isLoading = state.isLoadingInsights,
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .padding(vertical = 4.dp)
                 )
 
@@ -126,6 +164,15 @@ fun InsightsScreen(navController: NavController) {
                         .padding(vertical = 4.dp)
                 )
 
+                // Revenue Trend Analysis Card
+                RevenueTrendCard(
+                    trendAnalysis = state.revenueTrendAnalysis,
+                    isLoading = state.isLoadingInsights,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                )
+
                 // Peak Hours Card
                 PeakHoursCard(
                     peakHoursData = state.peakHoursData,
@@ -134,6 +181,9 @@ fun InsightsScreen(navController: NavController) {
                         .height(300.dp)
                         .padding(vertical = 4.dp)
                 )
+
+                // Add some padding at the bottom
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
 
@@ -168,8 +218,13 @@ fun InsightsScreen(navController: NavController) {
                                 RadioButton(
                                     selected = selectedPeriod == period,
                                     onClick = {
+                                        val oldPeriod = selectedPeriod
                                         selectedPeriod = period
                                         showPeriodSelector = false
+                                        // Refresh insights when period changes
+                                        if (oldPeriod != period) {
+                                            viewModel.refreshInsights(period)
+                                        }
                                     },
                                     colors = RadioButtonDefaults.colors(
                                         selectedColor = Color(0xFFC67C4E)
