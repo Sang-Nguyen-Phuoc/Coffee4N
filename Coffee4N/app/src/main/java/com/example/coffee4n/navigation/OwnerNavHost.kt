@@ -1,8 +1,11 @@
 package com.example.coffee4n.navigation
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Coffee
+import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Receipt
@@ -12,17 +15,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.coffee4n.ui.insights.InsightsScreen
+import com.example.coffee4n.ui.owner_customer.OwnerCustomerScreen
 import com.example.coffee4n.ui.owner_dashboard.OwnerDashboardScreen
 import com.example.coffee4n.ui.owner_employee.OwnerEmployeeScreen
 import com.example.coffee4n.ui.owner_table.OwnerTableScreen
 import com.example.coffee4n.ui.owner_inventory.OwnerInventoryScreen
 import com.example.coffee4n.ui.owner_product.OwnerProductScreen
 
+//@Preview(showBackground = true)
+//@Composable
+//fun Preview(){
+//    OwnerNavHost(startDestination = Destinations.OWNER_CUSTOMERS)
+//}
 
 @Composable
 fun OwnerNavHost(startDestination: String = Destinations.OWNER_ORDERS) {
@@ -38,10 +50,11 @@ fun OwnerNavHost(startDestination: String = Destinations.OWNER_ORDERS) {
             ) {
 
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Coffee, contentDescription = "Products") },
+                    icon = { Icon(Icons.Default.Coffee, contentDescription = "Products", Modifier.size(35.dp)) },
                     label = {
                         Text(
                             text = "Products",
+                            fontSize = 9.7.sp
                         )
                     },
                     selected = currentRoute == Destinations.OWNER_PRODUCTS,
@@ -61,8 +74,13 @@ fun OwnerNavHost(startDestination: String = Destinations.OWNER_ORDERS) {
                 )
 
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Receipt, contentDescription = "Orders") },
-                    label = { Text("Orders") },
+                    icon = { Icon(Icons.Default.Receipt, contentDescription = "Orders", Modifier.size(35.dp)) },
+                    label = {
+                        Text(
+                            text = "Orders",
+                            fontSize = 9.7.sp
+                        )
+                    },
                     selected = currentRoute == Destinations.OWNER_ORDERS,
                     onClick = {
                         if (currentRoute == Destinations.OWNER_ORDERS) {
@@ -79,10 +97,11 @@ fun OwnerNavHost(startDestination: String = Destinations.OWNER_ORDERS) {
                     )
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Inventory, contentDescription = "Inventory") },
+                    icon = { Icon(Icons.Default.Inventory, contentDescription = "Inventory", Modifier.size(35.dp)) },
                     label = {
                         Text(
                             text = "Inventory",
+                            fontSize = 9.7.sp
                         )
                     },
                     selected = currentRoute == Destinations.OWNER_INVENTORY,
@@ -101,10 +120,11 @@ fun OwnerNavHost(startDestination: String = Destinations.OWNER_ORDERS) {
                     )
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.People, contentDescription = "Employees") },
+                    icon = { Icon(Icons.Default.People, contentDescription = "Employees", Modifier.size(35.dp)) },
                     label = {
                         Text(
                             text = "Employees",
+                            fontSize = 9.7.sp
                         )
                     },
                     selected = currentRoute == Destinations.OWNER_EMPLOYEES,
@@ -122,12 +142,36 @@ fun OwnerNavHost(startDestination: String = Destinations.OWNER_ORDERS) {
                         unselectedTextColor = Color(0xFF313131)
                     )
                 )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Contacts, contentDescription = "Customers", Modifier.size(35.dp)) },
+                    label = {
+                        Text(
+                            text = "Customers",
+                            fontSize = 9.7.sp
+                        )
+                    },
+                    selected = currentRoute == Destinations.OWNER_CUSTOMERS,
+                    onClick = {
+                        if (currentRoute == Destinations.OWNER_CUSTOMERS) {
+                            navController.navigate(Destinations.OWNER_DASHBOARD) { launchSingleTop = true }
+                        } else {
+                            navController.navigate(Destinations.OWNER_CUSTOMERS) { launchSingleTop = true }
+                        }
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFFC67C4E),
+                        unselectedIconColor = Color(0xFF313131),
+                        selectedTextColor = Color(0xFFC67C4E),
+                        unselectedTextColor = Color(0xFF313131)
+                    )
+                )
 
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.TableChart, contentDescription = "Tables") },
+                    icon = { Icon(Icons.Default.TableChart, contentDescription = "Tables", Modifier.size(35.dp)) },
                     label = {
                         Text(
                             text = "Tables",
+                            fontSize = 9.7.sp
                         )
                     },
                     selected = currentRoute == Destinations.OWNER_TABLES,
@@ -159,6 +203,7 @@ fun OwnerNavHost(startDestination: String = Destinations.OWNER_ORDERS) {
             composable(Destinations.OWNER_ORDERS) {
                 Text("Orders Placeholder", color = Color(0xFF313131), modifier = Modifier.padding(innerPadding))
             }
+            composable(Destinations.OWNER_CUSTOMERS) { OwnerCustomerScreen() }
             composable(Destinations.OWNER_INVENTORY) { OwnerInventoryScreen() }
             composable(Destinations.OWNER_EMPLOYEES) { OwnerEmployeeScreen() }
             composable(Destinations.OWNER_INSIGHTS) { InsightsScreen(navController) }

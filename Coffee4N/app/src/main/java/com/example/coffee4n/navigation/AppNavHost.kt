@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,7 +52,7 @@ import com.example.coffee4n.ui.signup.SignupScreen
 import com.example.coffee4n.ui.welcome.WelcomeScreen
 
 @Composable
-fun AppNavHost(startDestination: String) {
+fun AppNavHost(startDestination: String = Destinations.HOME) {
     val navController = rememberNavController()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
@@ -85,7 +87,7 @@ fun AppNavHost(startDestination: String) {
                 if (showBottomBar) {
                     NavigationBar {
                         NavigationBarItem(
-                            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                            icon = { Icon(Icons.Default.Home, contentDescription = "Home", Modifier.size(35.dp)) },
                             label = { Text("Home", fontSize = 10.sp) },
                             selected = currentRoute == Destinations.HOME,
                             onClick = {
@@ -98,7 +100,7 @@ fun AppNavHost(startDestination: String) {
                             }
                         )
                         NavigationBarItem(
-                            icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Cart") },
+                            icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Cart", Modifier.size(35.dp)) },
                             label = { Text("Cart", fontSize = 10.sp) },
                             selected = currentRoute == Destinations.CART,
                             onClick = {
@@ -118,7 +120,7 @@ fun AppNavHost(startDestination: String) {
                             }
                         )
                         NavigationBarItem(
-                            icon = { Icon(Icons.Default.Receipt, contentDescription = "Orders") },
+                            icon = { Icon(Icons.Default.Receipt, contentDescription = "Orders", Modifier.size(35.dp)) },
                             label = { Text("Orders", fontSize = 10.sp) },
                             selected = currentRoute == Destinations.ORDERS,
                             onClick = {
@@ -131,7 +133,7 @@ fun AppNavHost(startDestination: String) {
                             }
                         )
                         NavigationBarItem(
-                            icon = { Icon(Icons.Default.Notifications, contentDescription = "Notifications") },
+                            icon = { Icon(Icons.Default.Notifications, contentDescription = "Notifications", Modifier.size(35.dp)) },
                             label = { Text("Notifications", fontSize = 10.sp) },
                             selected = currentRoute == Destinations.NOTIFICATIONS,
                             onClick = {
@@ -144,7 +146,7 @@ fun AppNavHost(startDestination: String) {
                             }
                         )
                         NavigationBarItem(
-                            icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
+                            icon = { Icon(Icons.Default.Person, contentDescription = "Profile", Modifier.size(35.dp)) },
                             label = { Text("Profile", fontSize = 10.sp) },
                             selected = currentRoute == Destinations.PROFILE,
                             onClick = {
@@ -177,9 +179,7 @@ fun AppNavHost(startDestination: String) {
                     composable(Destinations.HOME) { HomeScreen(navController) }
                     composable(Destinations.ORDERS) { OrdersScreen(navController) }
                     composable(Destinations.FAVORITES) { FavoritesScreen(navController) }
-                    composable(Destinations.CART) {
-                        CartScreen(navController = navController)
-                    }
+                    composable(Destinations.CART) { CartScreen(navController) }
                     composable(Destinations.CHECKOUT) { CheckoutScreen(navController) }
                     composable(Destinations.NOTIFICATIONS) { NotificationsScreen(navController) }
                     composable(Destinations.PROFILE) { ProfileScreen(navController) }
