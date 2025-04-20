@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
@@ -134,7 +135,20 @@ fun OwnerProductScreen(navController: NavController) {
                         onValueChange = { viewModel.updateSearchQuery(it) },
                         placeholder = { Text("Search coffee") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                        modifier = Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(8.dp))
+                        modifier = Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(8.dp)),
+                        trailingIcon = {
+                            if (state.searchQuery.isNotEmpty()) {
+                                IconButton(onClick = {
+                                    viewModel.updateSearchQuery("")
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Cancel,
+                                        contentDescription = "Clear search",
+                                        tint = Color.Gray
+                                    )
+                                }
+                            }
+                        }
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -194,6 +208,7 @@ fun OwnerProductScreen(navController: NavController) {
 
                     // Products count
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Total Products:",
                             style = MaterialTheme.typography.bodyLarge,
@@ -207,7 +222,7 @@ fun OwnerProductScreen(navController: NavController) {
                             color = Color(0xFF5A9280)
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     // Product List
                     LazyColumn(
@@ -236,6 +251,7 @@ fun OwnerProductScreen(navController: NavController) {
                         stockQuantity = state.stockQuantityInput,
                         costPrice = state.costPriceInput,
                         imageUrl = state.imageUrl,
+                        categoriesList = state.categories,
                         onNameChange = { viewModel.updateNameInput(it) },
                         onDescriptionChange = { viewModel.updateDescriptionInput(it) },
                         onPriceChange = { viewModel.updatePriceInput(it) },

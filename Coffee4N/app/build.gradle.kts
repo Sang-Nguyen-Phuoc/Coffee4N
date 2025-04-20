@@ -1,3 +1,19 @@
+import java.io.FileInputStream
+import java.util.Properties
+
+// Function to read the API key from local.properties
+fun getApiKeyFromLocalProperties(): String {
+    val properties = Properties()
+    val localPropertiesFile = project.rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        FileInputStream(localPropertiesFile).use { fis ->
+            properties.load(fis)
+            return properties.getProperty("GEMINI_API_KEY") ?: ""
+        }
+    }
+    return "" // Fallback for CI or other environments
+}
+
 plugins {
     id("com.android.application") version "8.8.1"
     id("org.jetbrains.kotlin.android") version "2.0.0"
@@ -12,7 +28,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.coffee4n"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -21,6 +37,7 @@ android {
         buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"${project.property("CLOUDINARY_CLOUD_NAME")}\"")
         buildConfigField("String", "CLOUDINARY_API_KEY", "\"${project.property("CLOUDINARY_API_KEY")}\"")
         buildConfigField("String", "CLOUDINARY_API_SECRET", "\"${project.property("CLOUDINARY_API_SECRET")}\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"${getApiKeyFromLocalProperties()}\"")
     }
 
     buildTypes {
@@ -81,6 +98,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("com.google.ai.client.generativeai:generativeai:0.2.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit.v115)

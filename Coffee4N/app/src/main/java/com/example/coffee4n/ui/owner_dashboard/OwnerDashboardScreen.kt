@@ -53,7 +53,8 @@ fun OwnerDashboardScreen(navController: NavController) {
                 .fillMaxSize()
                 .background(Color(0xFFF9F2ED))
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -108,6 +109,54 @@ fun OwnerDashboardScreen(navController: NavController) {
                     modifier = Modifier.weight(1f),
                     onClick = { navController.navigate(Destinations.OWNER_EMPLOYEES) }
                 )
+            }
+
+            // NEW: Business Insights Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                    .clickable { navController.navigate(Destinations.OWNER_INSIGHTS) },
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFF0F0F5)
+                ),
+                elevation = CardDefaults.cardElevation(2.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.InsertChart,
+                        contentDescription = "Insights",
+                        tint = Color(0xFF7B61FF),
+                        modifier = Modifier.size(36.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Business Insights",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color(0xFF313131)
+                        )
+                        Text(
+                            text = "View product trends and performance analytics",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF6D6D6D)
+                        )
+                    }
+
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "View",
+                        tint = Color(0xFF7B61FF)
+                    )
+                }
             }
 
             // Booked Tables Card (giữ nguyên)
@@ -166,15 +215,6 @@ fun OwnerDashboardScreen(navController: NavController) {
                     }
                 }
             }
-
-            // Thay CartItemsChart bằng OrderItemsChart
-            OrderItemsChart(
-                orderItemStats = state.orderItemStats,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(240.dp)
-                    .padding(vertical = 4.dp)
-            )
 
             // Recent Activity Section (giữ nguyên)
             Card(
@@ -243,127 +283,6 @@ fun OwnerDashboardScreen(navController: NavController) {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun OrderItemsChart(
-    orderItemStats: List<OrderItemStat>,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
-        elevation = CardDefaults.cardElevation(2.dp),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "Most Ordered Products",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color(0xFF313131),
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            if (orderItemStats.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No data available",
-                        color = Color(0xFF6D6D6D)
-                    )
-                }
-            } else {
-                val maxCount = orderItemStats.maxOfOrNull { it.count } ?: 1
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    orderItemStats.forEach { stat ->
-                        HorizontalBarChartItem(
-                            productName = stat.productName,
-                            count = stat.count,
-                            maxCount = maxCount,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun HorizontalBarChartItem(
-    productName: String,
-    count: Int,
-    maxCount: Int,
-    modifier: Modifier = Modifier
-) {
-    val barWidthFraction = if (maxCount > 0) count.toFloat() / maxCount else 0f
-
-    Row(
-        modifier = modifier.height(30.dp), // Reduce height slightly
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Product name on the left - allow more space for longer names
-        Text(
-            text = productName,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF6D6D6D),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis, // Add ellipsis for long names
-            modifier = Modifier.width(90.dp)
-        )
-
-        // Bar in the middle
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(20.dp) // Slightly reduce height
-        ) {
-            // Background bar (light color)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(20.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFECE4DB))
-            )
-
-            // Actual data bar
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(barWidthFraction)
-                    .height(20.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFC67C4E))
-            )
-        }
-
-        // Count value on the right
-        Text(
-            text = count.toString(),
-            style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF6D6D6D),
-            textAlign = TextAlign.End,
-            modifier = Modifier
-                .padding(start = 8.dp)
-                .width(30.dp)
-        )
     }
 }
 

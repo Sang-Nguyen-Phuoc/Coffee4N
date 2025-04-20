@@ -2,8 +2,6 @@ package com.example.coffee4n.ui.owner_product
 
 import androidx.compose.runtime.Composable
 import android.net.Uri
-import android.content.Context
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -11,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,7 +24,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import com.example.coffee4n.R
+import com.example.coffee4n.model.Category
 import com.example.coffee4n.utils.Cloudinary
 
 @Preview
@@ -42,15 +43,16 @@ fun AddEditProductDialog(
     description: String = "",
     price: String = "",
     isBestSeller: Boolean = false,
-    categoryId: String = "",
+    categoryId: Int = 0,
     stockQuantity: String = "",
     costPrice: String = "",
     imageUrl: String? = "",
+    categoriesList: List<Category> = emptyList(),
     onNameChange: (String) -> Unit = {},
     onDescriptionChange: (String) -> Unit = {},
     onPriceChange: (String) -> Unit = {},
     onBestSellerChange: (Boolean) -> Unit = {},
-    onCategoryChange: (String) -> Unit = {},
+    onCategoryChange: (Int) -> Unit = {},
     onStockQuantityChange: (String) -> Unit = {},
     onCostPriceChange: (String) -> Unit = {},
     onImageUrlChange: (String?) -> Unit = {},
@@ -58,6 +60,8 @@ fun AddEditProductDialog(
     onDismiss: () -> Unit = {}
 ) {
     val context = LocalContext.current
+
+    var expanded by remember { mutableStateOf(false) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var uploadProgress by remember { mutableStateOf(0) }
     var isUploading by remember { mutableStateOf(false) }
@@ -136,10 +140,16 @@ fun AddEditProductDialog(
 
                 OutlinedTextField(
                     value = price,
-                    onValueChange = onPriceChange,
+                    onValueChange = {
+                        val input = it.replace(',', '.').filter { char -> char.isDigit() || char == '.' }
+                        val entered = input.toDoubleOrNull()
+
+                        onPriceChange(if (entered != null) input else "")
+                    },
                     label = { Text("Price") },
                     prefix = { Text("$") },
                     modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFC67C4E),
                         focusedLabelColor = Color(0xFFC67C4E),
@@ -159,23 +169,56 @@ fun AddEditProductDialog(
                     Text("Best Seller", color = Color(0xFF313131))
                 }
 
-                OutlinedTextField(
-                    value = categoryId,
-                    onValueChange = onCategoryChange,
-                    label = { Text("Category ID") },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFC67C4E),
-                        focusedLabelColor = Color(0xFFC67C4E),
-                        cursorColor = Color(0xFFC67C4E)
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        readOnly = true,
+                        value = categoriesList.find { it.id == categoryId }?.name ?: "Select Category",
+                        onValueChange = {},
+                        label = { Text("Category") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                        },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFC67C4E),
+                            focusedLabelColor = Color(0xFFC67C4E),
+                            cursorColor = Color(0xFFC67C4E)
+                        )
                     )
-                )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        categoriesList.forEach { category ->
+                            DropdownMenuItem(
+                                text = { Text(category.name) },
+                                onClick = {
+                                    onCategoryChange(category.id)
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
 
                 OutlinedTextField(
                     value = stockQuantity,
-                    onValueChange = onStockQuantityChange,
+                    onValueChange = {
+                        val input = it.filter { char -> char.isDigit() }
+                        val entered = input.toIntOrNull()
+
+                        onStockQuantityChange(if (entered != null) input else "")
+                    },
                     label = { Text("Stock Quantity") },
                     modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFC67C4E),
                         focusedLabelColor = Color(0xFFC67C4E),
@@ -185,10 +228,16 @@ fun AddEditProductDialog(
 
                 OutlinedTextField(
                     value = costPrice,
-                    onValueChange = onCostPriceChange,
+                    onValueChange = {
+                        val input = it.replace(',', '.').filter { char -> char.isDigit() || char == '.' }
+                        val entered = input.toDoubleOrNull()
+
+                        onCostPriceChange(if (entered != null) input else "")
+                    },
                     label = { Text("Cost Price") },
                     prefix = { Text("$") },
                     modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFC67C4E),
                         focusedLabelColor = Color(0xFFC67C4E),
@@ -259,7 +308,16 @@ fun AddEditProductDialog(
         confirmButton = {
             Button(
                 onClick = onSave,
-                enabled = !isUploading, // Vô hiệu hóa nút khi đang upload
+                // Vô hiệu hóa nút khi đang upload ảnh hoặc thiếu dữ liệu
+                enabled = !isUploading
+                        && name.isNotBlank()
+                        && description.isNotBlank()
+                        && price.isNotBlank()
+                        && costPrice.isNotBlank()
+                        && stockQuantity.isNotBlank()
+                        && categoryId != 0
+                        && costPrice.toDouble() <= price.toDouble()
+                ,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC67C4E)),
                 shape = RoundedCornerShape(8.dp)
             ) {

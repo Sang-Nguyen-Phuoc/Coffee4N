@@ -2,6 +2,8 @@ package com.example.coffee4n.ui.owner_dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.coffee4n.repository.EmployeeRepository
+import com.example.coffee4n.repository.IngredientRepository
 import com.example.coffee4n.repository.OrderItemRepository
 import com.example.coffee4n.repository.ProductRepository
 import com.google.firebase.database.FirebaseDatabase
@@ -20,31 +22,33 @@ class OwnerDashboardViewModel : ViewModel() {
         firebaseDatabase = firebaseDatabase
     )
     private val productRepository = ProductRepository(firebaseDatabase)
+    private val employeeRepository = EmployeeRepository(firebaseDatabase)
+    private val ingredientRepository = IngredientRepository(firebaseDatabase)
 
     init {
         loadDashboardData()
     }
 
     private fun loadDashboardData() {
-        // Tải dữ liệu các mục được đặt hàng nhiều nhất
+        // Load ingredient information to check low stock ingredients
         viewModelScope.launch {
-            orderItemRepository.getMostOrderedItemsFlow(5).collectLatest { orderItemStats ->
-                _state.value = _state.value.copy(orderItemStats = orderItemStats)
+            ingredientRepository.getIngredientsFlow().collectLatest { ingredients ->
+                val lowStockIngredients = ingredients.count { it.quantity <= it.threshold }
+                _state.value = _state.value.copy(lowStockItems = lowStockIngredients)
             }
         }
 
-        // Tải thông tin sản phẩm để kiểm tra hàng tồn kho thấp
         viewModelScope.launch {
-            productRepository.getProductsFlow().collectLatest { products ->
-                val lowStockCount = products.count { it.stockQuantity < 10 }
-                _state.value = _state.value.copy(lowStockItems = lowStockCount)
+            employeeRepository.getEmployeesFlow().collectLatest { employees ->
+                _state.value = _state.value.copy(
+                    employeesPresent = employees.size
+                )
             }
         }
 
         // Giá trị mặc định cho các phần còn lại
         _state.value = _state.value.copy(
             ordersCount = 3,
-            employeesPresent = 2,
             dailyRevenue = 150.75,
             bookedTables = 1
         )
