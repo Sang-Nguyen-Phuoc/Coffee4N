@@ -4,6 +4,10 @@ data class InsightsState(
     val orderItemStats: List<OrderItemStat> = emptyList(),
     val dailyRevenueData: List<DailyRevenue> = emptyList(),
     val peakHoursData: List<HourlyData> = emptyList(),
+    val businessInsights: String = "",
+    val productRecommendations: String = "",
+    val revenueTrendAnalysis: String = "",
+    val isLoadingInsights: Boolean = true
 )
 
 data class OrderItemStat(
