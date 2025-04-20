@@ -136,7 +136,23 @@ fun IngredientTab(
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Total Ingredients:",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "${filteredIngredients.size}",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Color(0xFF5A9280)
+                    )
+                }
 
+                Spacer(modifier = Modifier.height(4.dp))
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()

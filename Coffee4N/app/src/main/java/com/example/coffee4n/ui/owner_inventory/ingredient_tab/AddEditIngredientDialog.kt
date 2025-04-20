@@ -45,7 +45,7 @@ fun AddEditIngredientDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = if (isNew) "Add Ingredient" else "Edit Ingredient",
+                text = if (isNew) "Add New Ingredient" else "Edit Ingredient",
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF313131)
             )

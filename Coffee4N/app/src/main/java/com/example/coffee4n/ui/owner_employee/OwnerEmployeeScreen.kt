@@ -58,12 +58,21 @@ fun OwnerEmployeeScreen() {
                     containerColor = Color(0xFFF9F2ED)
                 ),
                 actions = {
-                    IconButton(onClick = { viewModel.openAddDialog() }) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add Employee",
-                            tint = Color(0xFFC67C4E)
-                        )
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = Color(0xFFC67C4E),
+                        shadowElevation = 6.dp,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .offset(x = (-12).dp)
+                    ) {
+                        IconButton(onClick = { viewModel.openAddDialog() }) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add Product",
+                                tint = Color.White
+                            )
+                        }
                     }
                 }
             )

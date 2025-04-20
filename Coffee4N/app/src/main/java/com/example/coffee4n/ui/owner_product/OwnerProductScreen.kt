@@ -208,6 +208,7 @@ fun OwnerProductScreen(navController: NavController) {
 
                     // Products count
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Total Products:",
                             style = MaterialTheme.typography.bodyLarge,
@@ -221,7 +222,7 @@ fun OwnerProductScreen(navController: NavController) {
                             color = Color(0xFF5A9280)
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     // Product List
                     LazyColumn(
