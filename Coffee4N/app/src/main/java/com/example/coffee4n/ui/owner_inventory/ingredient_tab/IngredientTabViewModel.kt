@@ -74,7 +74,6 @@ class IngredientTabViewModel(application: Application) : AndroidViewModel(applic
                 }
             }
 
-            loadIngredients()
             _state.update { it.copy(isLoading = false, showAddEditIngredientDialog = false) }
         }
     }
@@ -85,7 +84,6 @@ class IngredientTabViewModel(application: Application) : AndroidViewModel(applic
             ingredientToDelete?.let { ingredient ->
                 try {
                     ingredientRepository.deleteIngredient(ingredient.id)
-                    loadIngredients()
                     _state.update { it.copy(showConfirmDeleteIngredientDialog = false) }
                 } catch (e: Exception) {
                     throw e
@@ -106,7 +104,6 @@ class IngredientTabViewModel(application: Application) : AndroidViewModel(applic
                 timestamp = LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
             )
             inventoryTransactionRepository.addTransaction(newTransaction)
-            loadIngredients()
             _state.update { it.copy(showAddTransactionDialog = false) }
         }
 

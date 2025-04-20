@@ -25,7 +25,7 @@ data class OwnerProductState (
     val descriptionInput: String = "",
     val priceInput: String = "",
     val isBestSellerInput: Boolean = false,
-    val categoryIdInput: String = "",
+    val categoryIdInput: Int = 0,
     val stockQuantityInput: String = "",
     val costPriceInput: String = "",
     val imageUrl: String? = null,

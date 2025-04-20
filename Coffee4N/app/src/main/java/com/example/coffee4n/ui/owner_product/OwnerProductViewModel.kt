@@ -103,7 +103,7 @@ class OwnerProductViewModel(application: Application) : AndroidViewModel(applica
                 descriptionInput = "",
                 priceInput = "",
                 isBestSellerInput = false,
-                categoryIdInput = "",
+                categoryIdInput = 0,
                 stockQuantityInput = "",
                 costPriceInput = "",
                 imageUrl = null
@@ -121,7 +121,7 @@ class OwnerProductViewModel(application: Application) : AndroidViewModel(applica
                 descriptionInput = product.description,
                 priceInput = product.price.toString(),
                 isBestSellerInput = product.isBestSeller,
-                categoryIdInput = product.categoryId.toString(),
+                categoryIdInput = product.categoryId,
                 stockQuantityInput = product.stockQuantity.toString(),
                 costPriceInput = product.costPrice.toString(),
                 imageUrl = product.imageUrl
@@ -133,7 +133,7 @@ class OwnerProductViewModel(application: Application) : AndroidViewModel(applica
         _state.update {
             it.copy(
                 showDeleteConfirmation = true,
-                selectedProduct = product // Sử dụng selectedProduct để lưu sản phẩm cần xóa
+                selectedProduct = product
             )
         }
     }
@@ -162,7 +162,7 @@ class OwnerProductViewModel(application: Application) : AndroidViewModel(applica
         _state.update { it.copy(isBestSellerInput = isBestSeller) }
     }
 
-    fun updateCategoryIdInput(categoryId: String) {
+    fun updateCategoryIdInput(categoryId: Int) {
         _state.update { it.copy(categoryIdInput = categoryId) }
     }
 
@@ -193,22 +193,23 @@ class OwnerProductViewModel(application: Application) : AndroidViewModel(applica
                 description = state.descriptionInput,
                 price = state.priceInput.toDoubleOrNull() ?: 0.0,
                 isBestSeller = state.isBestSellerInput,
-                categoryId = state.categoryIdInput.toIntOrNull() ?: 0,
+                categoryId = state.categoryIdInput,
                 stockQuantity = state.stockQuantityInput.toIntOrNull() ?: 0,
                 costPrice = state.costPriceInput.toDoubleOrNull() ?: 0.0,
-                imageUrl = state.imageUrl ?: "Url failed!"
+                imageUrl = state.imageUrl ?: ""
             )
 
             try {
+                hideDialog()
+                _state.update { it.copy(isLoading = true) }
                 if (state.isEdit) {
                     productRepository.updateProduct(product)
                 } else {
                     productRepository.addProduct(product)
                 }
-                hideDialog()
-                loadProducts() // Refresh list after saving
+                _state.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
-                _state.update { it.copy(error = "Failed to save product: ${e.message}") }
+                _state.update { it.copy(error = "Failed to save product: ${e.message}", isLoading = false) }
             }
         }
     }
@@ -218,23 +219,13 @@ class OwnerProductViewModel(application: Application) : AndroidViewModel(applica
             val productToDelete = _state.value.selectedProduct
             productToDelete?.let { product ->
                 try {
-                    productRepository.deleteProduct(product.id)
-                    loadProducts()
                     hideDialog()
+                    _state.update { it.copy(isLoading = true) }
+                    productRepository.deleteProduct(product.id)
+                    _state.update { it.copy(isLoading = false) }
                 } catch (e: Exception) {
-                    _state.update { it.copy(error = "Failed to delete product: ${e.message}") }
+                    _state.update { it.copy(error = "Failed to delete product: ${e.message}", isLoading = false) }
                 }
-            }
-        }
-    }
-
-    fun deleteProduct(productId: Int) {
-        viewModelScope.launch {
-            try {
-                productRepository.deleteProduct(productId)
-                loadProducts() // Refresh list after deletion
-            } catch (e: Exception) {
-                _state.update { it.copy(error = "Failed to delete product: ${e.message}") }
             }
         }
     }
