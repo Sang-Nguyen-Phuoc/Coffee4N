@@ -38,6 +38,29 @@ class OrderRepository(
         awaitClose { ordersReference.removeEventListener(listener) }
     }
 
+    fun getAllOrders(page: Int, pageSize: Int): Flow<List<Order>> = callbackFlow {
+        val ordersReference = firebaseDatabase.getReference("orders")
+        // Order by key (or another field like orderDate) and paginate
+        val query = ordersReference
+            .orderByKey() // Order by key for consistent pagination
+            .limitToFirst(pageSize * page) // Fetch up to the end of the current page
+
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val allOrders = snapshot.children.mapNotNull { it.getValue(Order::class.java) }
+                // Skip the orders from previous pages and take the current page
+                val orders = allOrders.drop((page - 1) * pageSize).take(pageSize)
+                trySend(orders).isSuccess
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        query.addValueEventListener(listener)
+        awaitClose { query.removeEventListener(listener) }
+    }
+
     suspend fun updateOrderStatus(orderId: Int, status: String) {
         firebaseDatabase.getReference("orders").child(orderId.toString())
             .child("status").setValue(status).await()
@@ -163,5 +186,10 @@ class OrderRepository(
 
         ordersReference.addValueEventListener(listener)
         awaitClose { ordersReference.removeEventListener(listener) }
+    }
+
+    // Helper function to get total order count for pagination
+    suspend fun getTotalOrderCount(): Long {
+        return firebaseDatabase.getReference("orders").get().await().childrenCount
     }
 }

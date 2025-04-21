@@ -63,8 +63,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                 ) {
 //                    AppNavHost(startDestination = startDestination)
-//                    OwnerNavHost(startDestination = Destinations.OWNER_PRODUCTS)
-                    AppNavHost(startDestination = Destinations.HOME)
+                    OwnerNavHost(startDestination = Destinations.OWNER_PRODUCTS)
+//                    AppNavHost(startDestination = Destinations.HOME)
                 }
             }
         }
