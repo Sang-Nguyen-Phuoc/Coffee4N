@@ -4,6 +4,9 @@ import android.util.Log
 import com.google.firebase.database.FirebaseDatabase
 import com.example.coffee4n.model.BookingTable
 import com.example.coffee4n.model.Table
+import com.example.coffee4n.session.LastIds
+import com.example.coffee4n.session.Models
+import com.example.coffee4n.session.OwnerSession
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
@@ -15,8 +18,8 @@ import kotlinx.coroutines.tasks.await
 class TableRepository(
     private val firebaseDatabase: FirebaseDatabase
 ) {
-    private val tablesRef = firebaseDatabase.getReference("tables")
-    private val bookingTablesRef = firebaseDatabase.getReference("bookingTables")
+    private val tablesRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.Table))
+    private val bookingTablesRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.BookingTable))
 
     // Quản lý Table
     suspend fun addTable(table: Table) {

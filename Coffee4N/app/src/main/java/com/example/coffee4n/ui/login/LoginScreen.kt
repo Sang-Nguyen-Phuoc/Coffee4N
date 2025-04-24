@@ -1,12 +1,17 @@
 package com.example.coffee4n.ui.login
 
 import android.content.Context
+import android.widget.Space
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -22,17 +27,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.coffee4n.R
+import com.example.coffee4n.model.Owner
 import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.UserRepository
@@ -64,6 +74,9 @@ fun LoginScreen(navController: NavController) {
     val email = viewModel.email.collectAsState()
     val password = viewModel.password.collectAsState()
     val loginState = viewModel.loginState.collectAsState()
+    val owner by viewModel.owner.collectAsState()
+    val isOwnerLogging by viewModel.isOwnerLogging.collectAsState()
+    val passcode by viewModel.passcode.collectAsState()
 
     // Password visibility toggle
     var passwordVisible by remember { mutableStateOf(false) }
@@ -72,14 +85,25 @@ fun LoginScreen(navController: NavController) {
     LaunchedEffect(loginState.value) {
         when (val state = loginState.value) {
             is LoginState.Success -> {
-                with(prefs.edit()) {
-                    putInt("userId", state.userId)
-                    putString("authToken", state.authToken) // Save the auth token
-                    putBoolean("isFirstTime", false)
-                    apply()
+                if (state.isOwner) {
+                    with(prefs.edit()) {
+                        putBoolean("isOwner", true)
+                        putString("authToken", state.authToken)
+                        apply()
+                    }
+                    navController.navigate(Destinations.OWNER_DASHBOARD) {
+                        popUpTo(Destinations.WELCOME) { inclusive = true }
+                    }
                 }
-                navController.navigate(Destinations.HOME) {
-                    popUpTo(Destinations.WELCOME) { inclusive = true }
+                else {
+                    with(prefs.edit()) {
+                        putInt("userId", state.userId)
+                        putString("authToken", state.authToken) // Save the auth token
+                        apply()
+                    }
+                    navController.navigate(Destinations.HOME) {
+                        popUpTo(Destinations.WELCOME) { inclusive = true }
+                    }
                 }
                 viewModel.resetLoginState()
             }
@@ -101,7 +125,7 @@ fun LoginScreen(navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp)
+                .padding(horizontal = 24.dp, vertical = 12.dp)
         ) {
             IconButton(onClick = { navController.popBackStack() }) {
                 Icon(
@@ -110,14 +134,23 @@ fun LoginScreen(navController: NavController) {
                     tint = Color.Black
                 )
             }
-            Spacer(modifier = Modifier.height(88.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+            OwnerCard(
+                owner = owner ?: Owner(),
+                onChangeStore = {
+                    prefs.edit().remove("ownerId").apply()
+                    navController.navigate(Destinations.WELCOME)
+                }
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
             Text(
-                "Welcome back! Glad to see you, Again!",
+                "Welcome! Glad to see you!",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold, // Chữ in đậm
                 color = Color.Black // Màu chữ đen
             )
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(22.dp))
             TextField(
                 value = email.value,
                 onValueChange = viewModel::onEmailChange,
@@ -161,14 +194,14 @@ fun LoginScreen(navController: NavController) {
                 ),
                 textStyle = TextStyle(fontSize = 20.sp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             TextButton(
                 onClick = { /* Navigate to Forgot Password screen if implemented */ },
                 modifier = Modifier.align(Alignment.End)
             ) {
                 Text("Forgot Password?", color = Color.DarkGray) // Màu xám đậm cho link
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Button(
                 onClick = {
                     if (email.value.isBlank() || password.value.isBlank()) {
@@ -229,6 +262,17 @@ fun LoginScreen(navController: NavController) {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(
+                onClick = { navController.navigate(Destinations.HOME) },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text(
+                    "Continue as a guest",
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
+
             TextButton(
                 onClick = { navController.navigate(Destinations.SIGNUP) },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -247,6 +291,137 @@ fun LoginScreen(navController: NavController) {
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 16.dp)
         )
+        if (isOwnerLogging) {
+            AlertDialog(
+                onDismissRequest = { viewModel.onDissmiss() },
+                title = {
+                    Text(
+                        text = "Verify Owner",
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF313131)
+                    )
+                },
+                text = {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "Please enter the provided passcode to verify that you are the owner."
+                        )
+                        OutlinedTextField(
+                            value = passcode,
+                            onValueChange = { viewModel.onPasscodeChange(it) },
+                            label = { Text("Passcode") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF5A9280),
+                                focusedLabelColor = Color(0xFF5A9280),
+                                cursorColor = Color(0xFF5A9280)
+                            )
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.verifyOwner()
+                        },
+                        enabled = passcode.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5A9280)),
+                        shape = RoundedCornerShape(8.dp),
+                    ) {
+                        Text("Verify", color = Color.White)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { viewModel.onDissmiss() },
+                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF6D6D6D))
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+                containerColor = Color.White
+            )
+        }
+    }
+}
 
+@Composable
+fun OwnerCard(
+    owner: Owner,
+    onChangeStore: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFD8E2DC)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp, 16.dp, 16.dp, 0.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = owner.avatarUrl,
+                contentDescription = "${owner.shopName} avatar",
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(Color.LightGray),
+                contentScale = ContentScale.Crop
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = owner.shopName,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 22.sp
+                    ),
+                    color = Color(0xFF5A9280)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = owner.shopAddress,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 14.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(Modifier.height(2.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            TextButton(
+                onClick = onChangeStore
+            ) {
+                Row {
+                    Text(
+                        "Visit another store",
+                        color = Color.Black
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.Default.Store,
+                        contentDescription = "Change store",
+                        tint = Color.Black
+                    )
+                }
+            }
+        }
     }
 }

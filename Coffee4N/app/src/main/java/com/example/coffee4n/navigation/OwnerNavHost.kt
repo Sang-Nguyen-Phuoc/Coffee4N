@@ -17,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -31,7 +33,7 @@ import com.example.coffee4n.ui.owner_product.OwnerProductScreen
 import com.example.coffee4n.ui.owner_table.OwnerTableScreen
 
 @Composable
-fun OwnerNavHost(startDestination: String = Destinations.OWNER_ORDERS) {
+fun OwnerNavHost(startDestination: String = Destinations.OWNER_DASHBOARD, parentNavController: NavHostController) {
     val navController = rememberNavController()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
@@ -159,14 +161,15 @@ fun OwnerNavHost(startDestination: String = Destinations.OWNER_ORDERS) {
             startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Destinations.OWNER_DASHBOARD) { OwnerDashboardScreen(navController) }
-            composable(Destinations.OWNER_PRODUCTS) { OwnerProductScreen(navController) }
-            composable(Destinations.OWNER_ORDERS) { OwnerOrderScreen(navController) }
+            composable(Destinations.OWNER_DASHBOARD) { OwnerDashboardScreen(parentNavController) }
+            composable(Destinations.OWNER_PRODUCTS) { OwnerProductScreen(parentNavController) }
+            composable(Destinations.OWNER_ORDERS) { OwnerOrderScreen(parentNavController) }
             composable(Destinations.OWNER_CUSTOMERS) { OwnerCustomerScreen() }
             composable(Destinations.OWNER_INVENTORY) { OwnerInventoryScreen() }
             composable(Destinations.OWNER_EMPLOYEES) { OwnerEmployeeScreen() }
-            composable(Destinations.OWNER_INSIGHTS) { InsightsScreen(navController) }
+            composable(Destinations.OWNER_INSIGHTS) { InsightsScreen(parentNavController) }
             composable(Destinations.OWNER_TABLES) { OwnerTableScreen() }
+            composable(Destinations.OWNER_PROFILE) { Text("Ownerprofile") }
         }
     }
 }

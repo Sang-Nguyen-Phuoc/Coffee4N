@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -52,7 +50,7 @@ import com.example.coffee4n.ui.signup.SignupScreen
 import com.example.coffee4n.ui.welcome.WelcomeScreen
 
 @Composable
-fun AppNavHost(startDestination: String = Destinations.HOME) {
+fun AppNavHost(startDestination: String = Destinations.HOME, parentNavController: NavHostController) {
     val navController = rememberNavController()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
@@ -173,17 +171,17 @@ fun AppNavHost(startDestination: String = Destinations.HOME) {
                     navController = navController,
                     startDestination = startDestination
                 ) {
-                    composable(Destinations.WELCOME) { WelcomeScreen(navController) }
-                    composable(Destinations.LOGIN) { LoginScreen(navController) }
-                    composable(Destinations.SIGNUP) { SignupScreen(navController) }
-                    composable(Destinations.HOME) { HomeScreen(navController) }
-                    composable(Destinations.ORDERS) { OrdersScreen(navController) }
-                    composable(Destinations.FAVORITES) { FavoritesScreen(navController) }
-                    composable(Destinations.CART) { CartScreen(navController) }
-                    composable(Destinations.CHECKOUT) { CheckoutScreen(navController) }
-                    composable(Destinations.NOTIFICATIONS) { NotificationsScreen(navController) }
-                    composable(Destinations.PROFILE) { ProfileScreen(navController) }
-                    composable(Destinations.BOOKING_TABLE) { BookingTableScreen(navController) }
+                    composable(Destinations.WELCOME) { WelcomeScreen(parentNavController) }
+                    composable(Destinations.LOGIN) { LoginScreen(parentNavController) }
+                    composable(Destinations.SIGNUP) { SignupScreen(parentNavController) }
+                    composable(Destinations.HOME) { HomeScreen(parentNavController) }
+                    composable(Destinations.ORDERS) { OrdersScreen(parentNavController) }
+                    composable(Destinations.FAVORITES) { FavoritesScreen(parentNavController) }
+                    composable(Destinations.CART) { CartScreen(parentNavController) }
+                    composable(Destinations.CHECKOUT) { CheckoutScreen(parentNavController) }
+                    composable(Destinations.NOTIFICATIONS) { NotificationsScreen(parentNavController) }
+                    composable(Destinations.PROFILE) { ProfileScreen(parentNavController) }
+                    composable(Destinations.BOOKING_TABLE) { BookingTableScreen(parentNavController) }
 
                     composable(
                         route = Destinations.PRODUCT_DETAILS,

@@ -9,13 +9,17 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import com.example.coffee4n.session.LastIds
+import com.example.coffee4n.session.Models
+import com.example.coffee4n.session.OwnerSession
 
 class EmployeeRepository(
     private val firebaseDatabase: FirebaseDatabase
 ) {
+    private val employeeRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.Employee))
     // Fetch employees directly from Firebase as a Flow
     fun getEmployeesFlow(): Flow<List<Employee>> = callbackFlow {
-        val reference = firebaseDatabase.getReference("employees")
+        val reference = employeeRef
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val employees = snapshot.children.mapNotNull { it.getValue(Employee::class.java) }
@@ -36,7 +40,7 @@ class EmployeeRepository(
 
     // Fetch a single employee by ID as a Flow
     fun getEmployeeFlow(id: Int): Flow<Employee?> = callbackFlow {
-        val reference = firebaseDatabase.getReference("employees").child(id.toString())
+        val reference = employeeRef.child(id.toString())
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val employee = snapshot.getValue(Employee::class.java)
@@ -57,22 +61,22 @@ class EmployeeRepository(
 
     // Add or update an employee in Firebase
     suspend fun addEmployee(employee: Employee) {
-        firebaseDatabase.getReference("employees").child(employee.id.toString()).setValue(employee).await()
+        employeeRef.child(employee.id.toString()).setValue(employee).await()
     }
 
     // Update an employee in Firebase (same as add, since Firebase overwrites)
     suspend fun updateEmployee(employee: Employee) {
-        firebaseDatabase.getReference("employees").child(employee.id.toString()).setValue(employee).await()
+        employeeRef.child(employee.id.toString()).setValue(employee).await()
     }
 
     // Delete an employee from Firebase
     suspend fun deleteEmployee(id: Int) {
-        firebaseDatabase.getReference("employees").child(id.toString()).removeValue().await()
+        employeeRef.child(id.toString()).removeValue().await()
     }
 
     // Get the maximum ID from Firebase
     suspend fun getMaxEmployeeId(): Int {
-        val snapshot = firebaseDatabase.getReference("employees").get().await()
+        val snapshot = employeeRef.get().await()
         val remoteEmployees = snapshot.children.mapNotNull { it.getValue(Employee::class.java) }
         return remoteEmployees.maxByOrNull { it.id }?.id ?: 0
     }
