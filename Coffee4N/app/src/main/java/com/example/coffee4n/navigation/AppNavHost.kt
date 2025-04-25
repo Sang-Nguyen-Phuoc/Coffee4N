@@ -174,11 +174,10 @@ fun AppNavHost(startDestination: String = Destinations.HOME, parentNavController
                     composable(Destinations.WELCOME) { WelcomeScreen(parentNavController) }
                     composable(Destinations.LOGIN) { LoginScreen(parentNavController) }
                     composable(Destinations.SIGNUP) { SignupScreen(parentNavController) }
-                    composable(Destinations.HOME) { HomeScreen(parentNavController) }
+                    composable(Destinations.HOME) { HomeScreen(navController) }
                     composable(Destinations.ORDERS) { OrdersScreen(parentNavController) }
-                    composable(Destinations.FAVORITES) { FavoritesScreen(parentNavController) }
-                    composable(Destinations.CART) { CartScreen(parentNavController) }
-                    composable(Destinations.CHECKOUT) { CheckoutScreen(parentNavController) }
+                    composable(Destinations.CART) { CartScreen(navController) }
+                    composable(Destinations.CHECKOUT) { CheckoutScreen(navController) }
                     composable(Destinations.NOTIFICATIONS) { NotificationsScreen(parentNavController) }
                     composable(Destinations.PROFILE) { ProfileScreen(parentNavController) }
                     composable(Destinations.BOOKING_TABLE) { BookingTableScreen(parentNavController) }

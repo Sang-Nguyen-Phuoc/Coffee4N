@@ -94,9 +94,9 @@ fun ProfileScreen(navController: NavController) {
                     ProfileHeader(user)
                     Spacer(modifier = Modifier.height(24.dp))
                     UserInfoSection(user)
-                    Spacer(modifier = Modifier.weight(1f))
-                    if (userId != 0) {
+                    if (userId != 0 ) {
                         EditButton { viewModel.showEditDialog() }
+                        Spacer(Modifier.weight(1f))
                         LogoutButton {
                             viewModel.logout(context)
                             navController.navigate(Destinations.LOGIN) {
@@ -105,11 +105,11 @@ fun ProfileScreen(navController: NavController) {
                         }
                     }
                     else {
+                        Spacer(Modifier.weight(1f))
                         LoginButton {
                             navController.navigate(Destinations.LOGIN)
                         }
                     }
-
                 }
                 if (state.showEditDialog) {
                     EditUserDialog(
@@ -213,7 +213,7 @@ private fun EditButton(onClick: () -> Unit) {
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            containerColor = Color.Transparent,
             contentColor = Color.Black
         ),
         modifier = Modifier

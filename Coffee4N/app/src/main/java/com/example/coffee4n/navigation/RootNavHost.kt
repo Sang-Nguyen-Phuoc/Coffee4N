@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import com.example.coffee4n.ui.login.LoginScreen
 import com.example.coffee4n.ui.welcome.WelcomeScreen
 import androidx.navigation.compose.composable
+import com.example.coffee4n.ui.signup.SignupScreen
 
 @Composable
 fun RootNavHost(
@@ -18,6 +19,9 @@ fun RootNavHost(
         }
         composable(Destinations.LOGIN) {
             LoginScreen(navController)
+        }
+        composable(Destinations.SIGNUP) {
+            SignupScreen(navController)
         }
         composable(Destinations.HOME) {
             AppNavHost(Destinations.HOME, navController)

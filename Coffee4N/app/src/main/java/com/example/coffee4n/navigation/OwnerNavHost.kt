@@ -30,6 +30,7 @@ import com.example.coffee4n.ui.owner_employee.OwnerEmployeeScreen
 import com.example.coffee4n.ui.owner_inventory.OwnerInventoryScreen
 import com.example.coffee4n.ui.owner_orders.OwnerOrderScreen
 import com.example.coffee4n.ui.owner_product.OwnerProductScreen
+import com.example.coffee4n.ui.owner_profile.OwnerProfileScreen
 import com.example.coffee4n.ui.owner_table.OwnerTableScreen
 
 @Composable
@@ -161,7 +162,7 @@ fun OwnerNavHost(startDestination: String = Destinations.OWNER_DASHBOARD, parent
             startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Destinations.OWNER_DASHBOARD) { OwnerDashboardScreen(parentNavController) }
+            composable(Destinations.OWNER_DASHBOARD) { OwnerDashboardScreen(navController) }
             composable(Destinations.OWNER_PRODUCTS) { OwnerProductScreen(parentNavController) }
             composable(Destinations.OWNER_ORDERS) { OwnerOrderScreen(parentNavController) }
             composable(Destinations.OWNER_CUSTOMERS) { OwnerCustomerScreen() }
@@ -169,7 +170,7 @@ fun OwnerNavHost(startDestination: String = Destinations.OWNER_DASHBOARD, parent
             composable(Destinations.OWNER_EMPLOYEES) { OwnerEmployeeScreen() }
             composable(Destinations.OWNER_INSIGHTS) { InsightsScreen(parentNavController) }
             composable(Destinations.OWNER_TABLES) { OwnerTableScreen() }
-            composable(Destinations.OWNER_PROFILE) { Text("Ownerprofile") }
+            composable(Destinations.OWNER_PROFILE) { OwnerProfileScreen(parentNavController) }
         }
     }
 }
