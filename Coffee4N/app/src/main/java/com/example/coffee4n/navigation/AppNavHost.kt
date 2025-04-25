@@ -171,9 +171,6 @@ fun AppNavHost(startDestination: String = Destinations.HOME, parentNavController
                     navController = navController,
                     startDestination = startDestination
                 ) {
-                    composable(Destinations.WELCOME) { WelcomeScreen(parentNavController) }
-                    composable(Destinations.LOGIN) { LoginScreen(parentNavController) }
-                    composable(Destinations.SIGNUP) { SignupScreen(parentNavController) }
                     composable(Destinations.HOME) { HomeScreen(navController) }
                     composable(Destinations.ORDERS) { OrdersScreen(parentNavController) }
                     composable(Destinations.CART) { CartScreen(navController) }
