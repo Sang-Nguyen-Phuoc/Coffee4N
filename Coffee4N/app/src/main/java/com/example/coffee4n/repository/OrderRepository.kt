@@ -1,6 +1,9 @@
 package com.example.coffee4n.repository
 
 import com.example.coffee4n.model.Order
+import com.example.coffee4n.session.LastIds
+import com.example.coffee4n.session.Models
+import com.example.coffee4n.session.OwnerSession
 import com.example.coffee4n.ui.insights.*
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -17,12 +20,14 @@ import java.util.Locale
 class OrderRepository(
     private val firebaseDatabase: FirebaseDatabase
 ) {
+    private val orderRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.Order))
+
     suspend fun addOrder(order: Order) {
-        firebaseDatabase.getReference("orders").child(order.id.toString()).setValue(order).await()
+        orderRef.child(order.id.toString()).setValue(order).await()
     }
 
     fun getOrdersByUser(userId: Int): Flow<List<Order>> = callbackFlow {
-        val ordersReference = firebaseDatabase.getReference("orders")
+        val ordersReference = orderRef
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val orders = snapshot.children.mapNotNull { it.getValue(Order::class.java) }
@@ -39,7 +44,7 @@ class OrderRepository(
     }
 
     fun getAllOrders(page: Int, pageSize: Int): Flow<List<Order>> = callbackFlow {
-        val ordersReference = firebaseDatabase.getReference("orders")
+        val ordersReference = orderRef
         // Order by key (or another field like orderDate) and paginate
         val query = ordersReference
             .orderByKey() // Order by key for consistent pagination
@@ -62,16 +67,16 @@ class OrderRepository(
     }
 
     suspend fun updateOrderStatus(orderId: Int, status: String) {
-        firebaseDatabase.getReference("orders").child(orderId.toString())
+        orderRef.child(orderId.toString())
             .child("status").setValue(status).await()
     }
 
     suspend fun deleteOrder(orderId: Int) {
-        firebaseDatabase.getReference("orders").child(orderId.toString()).removeValue().await()
+        orderRef.child(orderId.toString()).removeValue().await()
     }
 
     fun getRevenueByDayFlow(): Flow<List<DailyRevenue>> = callbackFlow {
-        val ordersReference = firebaseDatabase.getReference("orders")
+        val ordersReference = orderRef
 
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -122,7 +127,7 @@ class OrderRepository(
     }
 
     fun getPeakHoursFlow(): Flow<List<HourlyData>> = callbackFlow {
-        val ordersReference = firebaseDatabase.getReference("orders")
+        val ordersReference = orderRef
 
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -190,6 +195,6 @@ class OrderRepository(
 
     // Helper function to get total order count for pagination
     suspend fun getTotalOrderCount(): Long {
-        return firebaseDatabase.getReference("orders").get().await().childrenCount
+        return orderRef.get().await().childrenCount
     }
 }

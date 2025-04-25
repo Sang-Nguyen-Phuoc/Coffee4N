@@ -8,11 +8,13 @@ import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import com.example.coffee4n.session.Models
+import com.example.coffee4n.session.OwnerSession
 
 class CustomerRepository (
     private val firebaseDatabase: FirebaseDatabase
 ) {
-    private val customerRef = firebaseDatabase.getReference("users")
+    private val customerRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.User))
 
     fun getCustomersFlow(): Flow<List<User>> = callbackFlow {
         val listener = object : ValueEventListener {

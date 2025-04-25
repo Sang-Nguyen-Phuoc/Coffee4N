@@ -1,6 +1,9 @@
 package com.example.coffee4n.repository
 
 import com.example.coffee4n.model.Category
+import com.example.coffee4n.session.LastIds
+import com.example.coffee4n.session.Models
+import com.example.coffee4n.session.OwnerSession
 import com.google.firebase.database.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -12,8 +15,8 @@ import kotlin.coroutines.resumeWithException
 class CategoryRepository(
     private val firebaseDatabase: FirebaseDatabase
 ) {
-    private val categoryRef = firebaseDatabase.getReference("categories")
-    private val lastCategoryIdRef = firebaseDatabase.getReference("metadata/lastCategoryId")
+    private val categoryRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.Category))
+    private val lastCategoryIdRef = firebaseDatabase.getReference(OwnerSession.getMetadataPath(lastModelId = LastIds.Category))
 
     // Fetch categories as a Flow
     fun getCategoriesFlow(): Flow<List<Category>> = callbackFlow {

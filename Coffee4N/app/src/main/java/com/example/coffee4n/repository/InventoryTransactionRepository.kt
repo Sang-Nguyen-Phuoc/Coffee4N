@@ -12,13 +12,16 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import com.example.coffee4n.session.LastIds
+import com.example.coffee4n.session.Models
+import com.example.coffee4n.session.OwnerSession
 
 class InventoryTransactionRepository(
     private val firebaseDatabase: FirebaseDatabase,
     private val ingredientRepository: IngredientRepository
 ) {
-    private val transactionRef = firebaseDatabase.getReference("transactions")
-    private val lastTransactionIdRef = firebaseDatabase.getReference("metadata/lastTransactionId")
+    private val transactionRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.InventoryTransaction))
+    private val lastTransactionIdRef = firebaseDatabase.getReference(OwnerSession.getMetadataPath(lastModelId = LastIds.InventoryTransaction))
 
     init {
         initializeDefaultTransactions()

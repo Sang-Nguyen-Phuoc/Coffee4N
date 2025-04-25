@@ -11,12 +11,14 @@ import com.example.coffee4n.model.CartItem
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import com.example.coffee4n.session.LastIds
+import com.example.coffee4n.session.Models
+import com.example.coffee4n.session.OwnerSession
 
 class CartRepository(private val firebaseDatabase: FirebaseDatabase) {
     private val productsFlow = MutableStateFlow<List<Product>>(emptyList())
-
     init {
-        firebaseDatabase.getReference("products").addValueEventListener(object : ValueEventListener {
+        firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.Product)).addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val products = snapshot.children.mapNotNull { it.getValue(Product::class.java) }
                 productsFlow.value = products
@@ -28,8 +30,8 @@ class CartRepository(private val firebaseDatabase: FirebaseDatabase) {
         })
     }
 
-    private val cartRef = firebaseDatabase.getReference("cartitems")
-    private val lastCartItemIdRef = firebaseDatabase.getReference("metadata/lastCartItemId")
+    private val cartRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.CartItem))
+    private val lastCartItemIdRef = firebaseDatabase.getReference(OwnerSession.getMetadataPath(lastModelId = LastIds.CartItem))
 
     fun getCartItemsFlow(userId: Int): Flow<List<CartItem>> = callbackFlow {
         val listener = object : ValueEventListener {

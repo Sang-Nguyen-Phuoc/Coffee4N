@@ -1,16 +1,25 @@
 package com.example.coffee4n.repository
 
-import com.google.firebase.database.DataSnapshot import com.google.firebase.database.FirebaseDatabase import com.example.coffee4n.model.Promotion import kotlinx.coroutines.channels.awaitClose import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.callbackFlow import kotlinx.coroutines.tasks.await
+import com.google.firebase.database.DataSnapshot import com.google.firebase.database.FirebaseDatabase import com.example.coffee4n.model.Promotion
+import com.example.coffee4n.session.LastIds
+import com.example.coffee4n.session.Models
+import com.example.coffee4n.session.OwnerSession
+import kotlinx.coroutines.channels.awaitClose import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.callbackFlow import kotlinx.coroutines.tasks.await
 
-class PromotionRepository( private val firebaseDatabase: FirebaseDatabase ) { suspend fun getPromotionById(id: Int): Promotion? { val snapshot = firebaseDatabase.getReference("promotions").get().await();
-    return snapshot.children.mapNotNull { parsePromotion(it) }.firstOrNull { it.id == id } }
+class PromotionRepository( private val firebaseDatabase: FirebaseDatabase ) {
+    private val promotionRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.Promotion))
+    
+    suspend fun getPromotionById(id: Int): Promotion? {
+        val snapshot = promotionRef.get().await();
+        return snapshot.children.mapNotNull { parsePromotion(it) }.firstOrNull { it.id == id } 
+    }
     suspend fun getPromotionByCode(code: String): Promotion? {
-        val snapshot = firebaseDatabase.getReference("promotions").get().await()
+        val snapshot = promotionRef.get().await()
         return snapshot.children.mapNotNull { parsePromotion(it) }.firstOrNull { it.code == code }
     }
 
     suspend fun addPromotion(promotion: Promotion): Promotion {
-        val promotionsRef = firebaseDatabase.getReference("promotions")
+        val promotionsRef = promotionRef
         val snapshot = promotionsRef.get().await()
         val promotions = snapshot.children.mapNotNull { parsePromotion(it) }
 
@@ -26,7 +35,7 @@ class PromotionRepository( private val firebaseDatabase: FirebaseDatabase ) { su
     }
 
     suspend fun deletePromotion(id: Int) {
-        val promotionsRef = firebaseDatabase.getReference("promotions")
+        val promotionsRef = promotionRef
         val snapshot = promotionsRef.get().await()
         val index = snapshot.children.mapNotNull { parsePromotion(it) }.indexOfFirst { it.id == id }
         if (index != -1) {
@@ -35,7 +44,7 @@ class PromotionRepository( private val firebaseDatabase: FirebaseDatabase ) { su
     }
 
     fun getPromotionsFlow(): Flow<List<Promotion>> = callbackFlow {
-        val promotionsRef = firebaseDatabase.getReference("promotions")
+        val promotionsRef = promotionRef
         val listener = promotionsRef.addValueEventListener(object : com.google.firebase.database.ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val promotions = snapshot.children.mapNotNull { parsePromotion(it) }

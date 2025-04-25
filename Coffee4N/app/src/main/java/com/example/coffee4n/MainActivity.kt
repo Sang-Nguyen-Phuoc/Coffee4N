@@ -14,12 +14,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.compose.rememberNavController
 import com.cloudinary.android.MediaManager
 import com.example.coffee4n.model.CartItem
 import com.example.coffee4n.navigation.AppNavHost
 import com.example.coffee4n.navigation.OwnerNavHost
 import com.example.coffee4n.navigation.Destinations
+import com.example.coffee4n.navigation.RootNavHost
+import com.example.coffee4n.session.OwnerSession
+import com.example.coffee4n.ui.login.LoginScreen
 import com.example.coffee4n.ui.theme.Coffee4NTheme
+import com.example.coffee4n.ui.welcome.WelcomeScreen
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -40,31 +45,31 @@ class MainActivity : ComponentActivity() {
 
         // Get saved preferences
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        val isFirstTime = prefs.getBoolean("isFirstTime", true)
+
+//        prefs.edit().remove("ownerId").remove("authToken").remove("userId").remove("isOwner").apply()
+
         val authToken = prefs.getString("authToken", null)
         val userId = prefs.getInt("userId", 0)
+        val isOwner = prefs.getBoolean("isOwner", false)
+        val ownerId = prefs.getString("ownerId", null)
 
+        OwnerSession.ownerId = ownerId ?: ""
 
-
-        // Determine start destination based on auth status
-        var startDestination = if (isFirstTime || authToken == null) {
-            Destinations.WELCOME
-        } else if (authToken != null && userId != 0) {
-            // Initialize Firebase Auth if using token validation
-            // Note: Full token validation implementation would be done here
-            Destinations.HOME
-        } else {
-            Destinations.LOGIN
+//         Determine start destination based on auth status
+        val startDestination = when {
+            ownerId == null -> Destinations.WELCOME
+            isOwner -> Destinations.OWNER_DASHBOARD
+            authToken.isNullOrEmpty() || userId == 0 -> Destinations.LOGIN
+            else -> Destinations.HOME
         }
 
         setContent {
             Coffee4NTheme {
+                val navController = rememberNavController()
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                 ) {
-//                    AppNavHost(startDestination = startDestination)
-                    OwnerNavHost(startDestination = Destinations.OWNER_PRODUCTS)
-//                    AppNavHost(startDestination = Destinations.HOME)
+                    RootNavHost(navController, startDestination)
                 }
             }
         }

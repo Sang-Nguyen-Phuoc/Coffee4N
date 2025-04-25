@@ -12,11 +12,14 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import com.example.coffee4n.session.LastIds
+import com.example.coffee4n.session.Models
+import com.example.coffee4n.session.OwnerSession
 
 class FavoritesRepository(
     private val firebaseDatabase: FirebaseDatabase
 ) {
-    private val favoritesRef = firebaseDatabase.getReference("favorites")
+    private val favoritesRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.Favorite))
 
     fun getFavoritesFlow(userId: Int): Flow<List<Product>> = callbackFlow {
         val userFavoritesRef = favoritesRef.child(userId.toString())

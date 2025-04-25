@@ -3,6 +3,7 @@ package com.example.coffee4n.repository
 import com.google.firebase.database.FirebaseDatabase
 import com.example.coffee4n.model.Attendance
 import com.example.coffee4n.model.database.AttendanceDao
+import com.example.coffee4n.session.OwnerSession
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
@@ -20,19 +21,19 @@ class AttendanceRepository(
     }
 
     private suspend fun syncAttendancesFromRemote(employeeId: Int) {
-        val snapshot = firebaseDatabase.getReference("attendances").child(employeeId.toString()).get().await()
+        val snapshot = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = "attendances")).child(employeeId.toString()).get().await()
         val attendances = snapshot.children.mapNotNull { it.getValue(Attendance::class.java) }
         attendances.forEach { attendanceDao.insertAttendance(it) }
     }
 
     suspend fun addAttendance(attendance: Attendance) {
         attendanceDao.insertAttendance(attendance)
-        firebaseDatabase.getReference("attendances").child(attendance.employeeId.toString()).child(attendance.id.toString()).setValue(attendance).await()
+        firebaseDatabase.getReference(OwnerSession.getReferencePath(model = "attendances")).child(attendance.employeeId.toString()).child(attendance.id.toString()).setValue(attendance).await()
     }
 
     suspend fun deleteAttendance(id: Int, employeeId: Int) {
         attendanceDao.deleteAttendance(id)
-        firebaseDatabase.getReference("attendances").child(employeeId.toString()).child(id.toString()).removeValue().await()
+        firebaseDatabase.getReference(OwnerSession.getReferencePath(model = "attendances")).child(employeeId.toString()).child(id.toString()).removeValue().await()
     }
 
     fun getAttendancesFlow(employeeId: Int): Flow<List<Attendance>> = flow {

@@ -1,6 +1,9 @@
 package com.example.coffee4n.repository
 
 import com.example.coffee4n.model.Product
+import com.example.coffee4n.session.LastIds
+import com.example.coffee4n.session.Models
+import com.example.coffee4n.session.OwnerSession
 import com.google.firebase.database.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -12,8 +15,8 @@ import kotlin.coroutines.resumeWithException
 class ProductRepository(
     private val firebaseDatabase: FirebaseDatabase
 ) {
-    private val productRef = firebaseDatabase.getReference("products")
-    private val lastProductIdRef = firebaseDatabase.getReference("metadata/lastProductId")
+    private val productRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.Product))
+    private val lastProductIdRef = firebaseDatabase.getReference(OwnerSession.getMetadataPath(lastModelId = LastIds.Product))
 
     init {
         initializeDefaultProducts()

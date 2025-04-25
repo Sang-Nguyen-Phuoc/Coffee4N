@@ -8,12 +8,15 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import kotlin.coroutines.resumeWithException
+import com.example.coffee4n.session.LastIds
+import com.example.coffee4n.session.Models
+import com.example.coffee4n.session.OwnerSession
 
 class IngredientRepository(
     private val firebaseDatabase: FirebaseDatabase
 ) {
-    private val ingredientRef = firebaseDatabase.getReference("ingredients")
-    private val lastIngredientIdRef = firebaseDatabase.getReference("metadata/lastIngredientId")
+    private val ingredientRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.Ingredient))
+    private val lastIngredientIdRef = firebaseDatabase.getReference(OwnerSession.getMetadataPath(lastModelId = LastIds.Category))
 
     init {
         initializeDefaultIngredients()
