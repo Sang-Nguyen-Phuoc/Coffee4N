@@ -135,7 +135,11 @@ fun EditUserDialog(
             Button(
                 onClick = onSave,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                enabled = name.isNotBlank()
+                        && username.isNotBlank()
+                        && phone.isNotBlank()
+                        && address.isNotBlank()
             ) {
                 Text("Save", color = Color.Black)
             }

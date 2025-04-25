@@ -18,6 +18,7 @@ class OwnerRepository {
                     val passCode = ownerSnapshot.child("passCode").getValue(String::class.java) ?: ""
                     val shopName = ownerSnapshot.child("shopName").getValue(String::class.java) ?: ""
                     val shopAddress = ownerSnapshot.child("shopAddress").getValue(String::class.java) ?: ""
+                    val shopPhone = ownerSnapshot.child("shopPhone").getValue(String::class.java) ?: ""
 
                     Owner(
                         ownerId = ownerId,
@@ -25,7 +26,8 @@ class OwnerRepository {
                         avatarUrl = avatarUrl,
                         passCode = passCode,
                         shopName = shopName,
-                        shopAddress = shopAddress
+                        shopAddress = shopAddress,
+                        shopPhone = shopPhone
                     )
                 }
                 trySend(owners).isSuccess
@@ -52,6 +54,7 @@ class OwnerRepository {
                     val passCode = it.child("passCode").getValue(String::class.java) ?: ""
                     val shopName = it.child("shopName").getValue(String::class.java) ?: ""
                     val shopAddress = it.child("shopAddress").getValue(String::class.java) ?: ""
+                    val shopPhone = it.child("shopPhone").getValue(String::class.java) ?: ""
 
                     Owner(
                         ownerId = id,
@@ -59,7 +62,8 @@ class OwnerRepository {
                         avatarUrl = avatarUrl,
                         passCode = passCode,
                         shopName = shopName,
-                        shopAddress = shopAddress
+                        shopAddress = shopAddress,
+                        shopPhone = shopPhone
                     )
                 }
 
@@ -79,12 +83,10 @@ class OwnerRepository {
     fun updateOwner(owner: Owner) {
         val ownerRef = ownersRef.child(owner.ownerId)
         val updates = mapOf(
-            "ownerId" to owner.ownerId,
-            "email" to owner.email,
             "avatarUrl" to owner.avatarUrl,
-            "passCode" to owner.passCode,
             "shopName" to owner.shopName,
-            "shopAddress" to owner.shopAddress
+            "shopAddress" to owner.shopAddress,
+            "shopPhone" to owner.shopPhone
         )
         ownerRef.updateChildren(updates)
     }

@@ -76,8 +76,8 @@ fun IngredientTab(
         .filter { it.name.contains(state.searchQuery, ignoreCase = true) }
         .filter {
             when (state.selectedFilter) {
-                1 -> it.quantity >= it.threshold
-                2 -> it.quantity in 1 until it.threshold
+                1 -> it.quantity > it.threshold
+                2 -> it.quantity in 1 .. it.threshold
                 3 -> it.quantity <= 0
                 else -> true
             }
@@ -276,7 +276,7 @@ fun IngredientCard(
 
                     val stockColor = when {
                         ingredient.quantity <= 0 -> Color.Red
-                        ingredient.quantity < ingredient.threshold -> Color(0xFFFFA500) // Orange
+                        ingredient.quantity <= ingredient.threshold -> Color(0xFFFFA500) // Orange
                         else -> Color(0xFF4CAF50) // Green
                     }
 
@@ -289,7 +289,7 @@ fun IngredientCard(
                         Text(
                             text = when {
                                 ingredient.quantity <= 0 -> "Out"
-                                ingredient.quantity < ingredient.threshold -> "Low"
+                                ingredient.quantity <= ingredient.threshold -> "Low"
                                 else -> "Enough"
                             },
                             fontWeight = FontWeight.Medium,

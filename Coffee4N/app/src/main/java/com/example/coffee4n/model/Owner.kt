@@ -6,5 +6,6 @@ data class Owner (
     val avatarUrl: String = "",
     val passCode: String = "",
     val shopName: String = "",
-    val shopAddress: String = ""
+    val shopAddress: String = "",
+    val shopPhone: String = ""
 )

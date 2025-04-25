@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -16,12 +17,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.coffee4n.navigation.Destinations
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,7 +47,31 @@ fun OwnerDashboardScreen(navController: NavController) {
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFFF9F2ED)
-                )
+                ),
+                actions = {
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = Color(0xFFC67C4E),
+                        shadowElevation = 6.dp,
+                        modifier = Modifier
+                            .offset(x = (-12).dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clickable { navController.navigate(Destinations.OWNER_PROFILE) }
+                        ) {
+                            AsyncImage(
+                                model = state.avatarUrl,
+                                contentDescription = "Profile",
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.LightGray),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                }
             )
         }
     ) { paddingValues ->

@@ -1,11 +1,13 @@
 package com.example.coffee4n.ui.owner_dashboard
 
+import OwnerRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.coffee4n.repository.EmployeeRepository
 import com.example.coffee4n.repository.IngredientRepository
 import com.example.coffee4n.repository.OrderItemRepository
 import com.example.coffee4n.repository.ProductRepository
+import com.example.coffee4n.session.OwnerSession
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +26,7 @@ class OwnerDashboardViewModel : ViewModel() {
     private val productRepository = ProductRepository(firebaseDatabase)
     private val employeeRepository = EmployeeRepository(firebaseDatabase)
     private val ingredientRepository = IngredientRepository(firebaseDatabase)
+    private val ownerRepository = OwnerRepository()
 
     init {
         loadDashboardData()
@@ -46,6 +49,17 @@ class OwnerDashboardViewModel : ViewModel() {
             }
         }
 
+        viewModelScope.launch {
+            val ownerId = OwnerSession.ownerId
+            ownerRepository.getOwner(ownerId).collect { owner ->
+                if (owner != null) {
+                    _state.value = _state.value.copy(
+                        avatarUrl = owner.avatarUrl
+                    )
+                }
+            }
+
+        }
         // Giá trị mặc định cho các phần còn lại
         _state.value = _state.value.copy(
             ordersCount = 3,

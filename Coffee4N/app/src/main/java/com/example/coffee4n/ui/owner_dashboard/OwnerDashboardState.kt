@@ -6,4 +6,5 @@ data class OwnerDashboardState(
     val employeesPresent: Int = 0,
     val dailyRevenue: Double = 0.0,
     val bookedTables: Int = 0,
+    val avatarUrl: String = ""
 )
