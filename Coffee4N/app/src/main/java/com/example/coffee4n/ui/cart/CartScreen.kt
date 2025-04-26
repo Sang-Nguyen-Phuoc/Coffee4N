@@ -95,7 +95,7 @@ fun CartScreen(navController: NavController) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 "YOUR CART",
-                                fontSize = 30.sp, // Giảm fontSize để phù hợp
+                                fontSize = 30.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF3E2723)
                             )
@@ -112,7 +112,7 @@ fun CartScreen(navController: NavController) {
                                 Icons.Default.ArrowBack,
                                 contentDescription = "Back",
                                 tint = Color(0xFF3E2723),
-                                modifier = Modifier.size(30.dp) // Giảm kích thước icon
+                                modifier = Modifier.size(30.dp)
                             )
                         }
                     },
@@ -122,7 +122,7 @@ fun CartScreen(navController: NavController) {
                         navigationIconContentColor = Color(0xFF3E2723)
                     ),
                     modifier = Modifier
-                        .height(90.dp) // Giảm chiều cao TopAppBar
+                        .height(90.dp)
                         .shadow(4.dp)
                 )
             },
@@ -199,7 +199,7 @@ fun CartScreen(navController: NavController) {
                             items(state.cartItems) { item ->
                                 CartItemCard(
                                     item = item,
-                                    onUpdateQuantity = { newQty -> viewModel.updateQuantity(item, newQty) },
+                                    onUpdateQuantity = { newQty -> viewModel.updateQuantity(item, newQty, snackbarHostState) },
                                     onRemove = { viewModel.removeItem(item) },
                                     onUpdateNote = { newNote -> viewModel.updateCartItemNote(item, newNote) },
                                     isOutOfStock = state.outOfStockItems.contains(item.product.id)
@@ -372,7 +372,7 @@ fun CartItemCard(
                     )
                     QuantityButton(
                         text = "+",
-                        enabled = !isOutOfStock,
+                        enabled = !isOutOfStock && item.cartItem.quantity < item.product.stockQuantity, // Disable if quantity equals or exceeds stock
                         onClick = { onUpdateQuantity(item.cartItem.quantity + 1) }
                     )
                     IconButton(

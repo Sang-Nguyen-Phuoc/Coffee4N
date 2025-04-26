@@ -9,6 +9,8 @@ import com.example.coffee4n.repository.CartItemRepository
 import com.example.coffee4n.repository.ProductRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.flow.collect
 
 class CartViewModel(
     private val cartItemRepository: CartItemRepository,
@@ -27,39 +29,36 @@ class CartViewModel(
             _state.value = _state.value.copy(isLoading = true)
             try {
                 cartItemRepository.getCartItemsFlow(userId).collect { cartItems ->
-                    println("DEBUG: Received cartItems for userId $userId: $cartItems")
                     updateUIFromCartItems(cartItems)
                 }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = "Không thể tải giỏ hàng: ${e.message}"
+                    error = "Failed to load cart: ${e.message}"
                 )
             }
         }
     }
 
-    fun updateQuantity(cartItem: CartItemWithProduct, newQuantity: Int) {
+    fun updateQuantity(cartItem: CartItemWithProduct, newQuantity: Int, snackbarHostState: SnackbarHostState) {
         viewModelScope.launch {
             if (newQuantity < 1) {
                 removeItem(cartItem)
                 return@launch
             }
             if (newQuantity > cartItem.product.stockQuantity) {
-                _state.value = _state.value.copy(
-                    error = "Số lượng vượt quá tồn kho cho ${cartItem.product.name}"
-                )
+                snackbarHostState.showSnackbar("Cannot exceed stock quantity for ${cartItem.product.name}")
                 return@launch
             }
             try {
                 val updatedCartItem = cartItem.cartItem.copy(quantity = newQuantity)
                 cartItemRepository.addCartItem(updatedCartItem)
                 _state.value = _state.value.copy(
-                    successMessage = "Đã cập nhật số lượng ${cartItem.product.name}"
+                    successMessage = "Updated quantity for ${cartItem.product.name}"
                 )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
-                    error = "Không thể cập nhật số lượng: ${e.message}"
+                    error = "Failed to update quantity: ${e.message}"
                 )
             }
         }
@@ -70,11 +69,11 @@ class CartViewModel(
             try {
                 cartItemRepository.deleteCartItem(cartItem.cartItem.id, cartItem.cartItem.userId)
                 _state.value = _state.value.copy(
-                    successMessage = "Đã xóa ${cartItem.product.name}!"
+                    successMessage = "Removed ${cartItem.product.name} from cart"
                 )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
-                    error = "Không thể xóa sản phẩm: ${e.message}"
+                    error = "Failed to remove item: ${e.message}"
                 )
             }
         }
@@ -89,11 +88,11 @@ class CartViewModel(
                     newNote
                 )
                 _state.value = _state.value.copy(
-                    successMessage = "Đã cập nhật ghi chú cho ${cartItem.product.name}"
+                    successMessage = "Updated note for ${cartItem.product.name}"
                 )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
-                    error = "Không thể cập nhật ghi chú: ${e.message}"
+                    error = "Failed to update note: ${e.message}"
                 )
             }
         }
@@ -120,11 +119,10 @@ class CartViewModel(
 
     private fun updateTotals(cartItems: List<CartItemWithProduct>) {
         val itemTotal = cartItems.sumOf { it.product.price * it.cartItem.quantity }
-        val tax = itemTotal * 0.02 // Thuế 2%
+        val tax = itemTotal * 0.02 // 2% tax
         val total = itemTotal + tax
         val outOfStock = cartItems.filter { it.cartItem.quantity > it.product.stockQuantity }
             .map { it.product.id }
-        println("DEBUG: Updating totals with ${cartItems.size} items: $cartItems")
         _state.value = _state.value.copy(
             cartItems = cartItems,
             itemTotal = itemTotal,

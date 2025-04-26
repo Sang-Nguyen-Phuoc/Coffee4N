@@ -27,7 +27,21 @@ class UserRepository(
     private val lastUserIdRef = firebaseDatabase.getReference(OwnerSession.getMetadataPath(lastModelId = LastIds.User))
     private val userRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.User))
 
-    suspend fun getUserById(userId: Int): User? = userDao.getUserById(userId)
+    suspend fun getUserById(userId: Int): User? {
+        // Try to get user from Room first
+        var user = userDao.getUserById(userId)
+
+        // If not found in Room, fetch from Firebase
+        if (user == null) {
+            try {
+                val snapshot = userRef.child(userId.toString()).get().await()
+                user = snapshot.getValue(User::class.java)
+            } catch (e: Exception) {
+                Log.e("UserRepository", "Failed to fetch user $userId from Firebase: ${e.message}")
+            }
+        }
+        return user
+    }
 
     suspend fun syncUserFromRemote(userId: Int) {
         val firebaseUser = firebaseAuth.currentUser

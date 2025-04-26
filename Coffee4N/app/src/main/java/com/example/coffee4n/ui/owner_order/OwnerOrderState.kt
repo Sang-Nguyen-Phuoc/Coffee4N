@@ -2,6 +2,7 @@ package com.example.coffee4n.ui.owner_orders
 
 import com.example.coffee4n.model.Order
 import com.example.coffee4n.model.Promotion
+import com.example.coffee4n.model.User
 
 data class OwnerOrderState(
     val orders: List<Order> = emptyList(),
@@ -12,6 +13,7 @@ data class OwnerOrderState(
     val successMessage: String? = null,
     val updatingOrderId: Int? = null,
     val selectedOrderId: Int? = null,
+    val customer: User? = null,
     val orderItems: List<OrderItemWithName> = emptyList(),
     val isLoadingOrderItems: Boolean = false,
     val selectedTab: Int = 0,
@@ -23,9 +25,9 @@ data class OwnerOrderState(
     val promotionSuccessMessage: String? = null,
     val deletingPromotionId: Int? = null,
     val showAddPromotionDialog: Boolean = false,
-    val currentOrderPage: Int = 1, // Add current page for orders
-    val orderPageSize: Int = 10, // Add page size for orders
-    val hasMoreOrders: Boolean = true // Add flag to track if more orders can be loaded
+    val currentOrderPage: Int = 1,
+    val orderPageSize: Int = 10,
+    val hasMoreOrders: Boolean = true
 )
 
 data class OrderItemWithName(

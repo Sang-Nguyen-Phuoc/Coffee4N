@@ -31,15 +31,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.coffee4n.model.Promotion
+import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.navigation.Destinations
-import com.example.coffee4n.repository.CartItemRepository
-import com.example.coffee4n.repository.OrderItemRepository
-import com.example.coffee4n.repository.OrderRepository
-import com.example.coffee4n.repository.ProductRepository
-import com.example.coffee4n.repository.PromotionRepository
+import com.example.coffee4n.repository.*
 import com.example.coffee4n.ui.cart.CartItemWithProduct
 import com.example.coffee4n.ui.cart.CartViewModel
 import com.example.coffee4n.ui.cart.CartViewModelFactory
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,11 +47,17 @@ fun CheckoutScreen(navController: NavController) {
     val userId = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         .getInt("userId", 0)
 
-    val cartItemRepository = CartItemRepository(FirebaseDatabase.getInstance())
-    val productRepository = ProductRepository(FirebaseDatabase.getInstance())
-    val promotionRepository = PromotionRepository(FirebaseDatabase.getInstance())
-    val orderRepository = OrderRepository(FirebaseDatabase.getInstance())
-    val orderItemRepository = OrderItemRepository(FirebaseDatabase.getInstance())
+    val firebaseDatabase = FirebaseDatabase.getInstance()
+    val cartItemRepository = CartItemRepository(firebaseDatabase)
+    val productRepository = ProductRepository(firebaseDatabase)
+    val promotionRepository = PromotionRepository(firebaseDatabase)
+    val orderRepository = OrderRepository(firebaseDatabase)
+    val orderItemRepository = OrderItemRepository(firebaseDatabase)
+    val userRepository = UserRepository(
+        userDao = AppDatabase.getDatabase(context).userDao(),
+        firebaseAuth = FirebaseAuth.getInstance(),
+        firebaseDatabase = firebaseDatabase
+    )
 
     val cartViewModel: CartViewModel = viewModel(
         factory = CartViewModelFactory(cartItemRepository, productRepository, userId)
@@ -66,14 +70,34 @@ fun CheckoutScreen(navController: NavController) {
             promotionRepository = promotionRepository,
             orderRepository = orderRepository,
             orderItemRepository = orderItemRepository,
+            userRepository = userRepository,
             userId = userId
         )
     )
     val checkoutState by checkoutViewModel.state.collectAsState()
 
     var selectedDeliveryMethod by remember { mutableStateOf("PICKUP") }
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Show error dialog when errorMessage changes
+    LaunchedEffect(checkoutState.errorMessage) {
+        if (checkoutState.errorMessage != null) {
+            errorMessage = checkoutState.errorMessage
+            showErrorDialog = true
+            checkoutViewModel.clearErrorMessage()
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Show success message as a Snackbar
+    checkoutState.successMessage?.let { message ->
+        LaunchedEffect(message) {
+            snackbarHostState.showSnackbar(message)
+            checkoutViewModel.clearSuccessMessage()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -324,17 +348,9 @@ fun CheckoutScreen(navController: NavController) {
                             )
                         }
                     }
-                    checkoutState.errorMessage?.let {
-                        Text(
-                            it,
-                            color = Color(0xFFE57373),
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
 
                     Button(
-                        onClick = { checkoutViewModel.showConfirmDialog() },
+                        onClick = { checkoutViewModel.showConfirmDialog(selectedDeliveryMethod) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 16.dp, bottom = 16.dp)
@@ -358,6 +374,7 @@ fun CheckoutScreen(navController: NavController) {
             }
         }
 
+        // Confirmation dialog
         if (checkoutState.showConfirmDialog) {
             AlertDialog(
                 onDismissRequest = { checkoutViewModel.hideConfirmDialog() },
@@ -378,6 +395,23 @@ fun CheckoutScreen(navController: NavController) {
                 dismissButton = {
                     TextButton(onClick = { checkoutViewModel.hideConfirmDialog() }) {
                         Text("No", color = Color(0xFF8D7A55))
+                    }
+                },
+                containerColor = Color(0xFFFAF3E0),
+                titleContentColor = Color(0xFF6B4E31),
+                textContentColor = Color(0xFF6B4E31)
+            )
+        }
+
+        // Error dialog
+        if (showErrorDialog) {
+            AlertDialog(
+                onDismissRequest = { showErrorDialog = false },
+                title = { Text("Information Required") },
+                text = { Text(errorMessage ?: "An error occurred") },
+                confirmButton = {
+                    TextButton(onClick = { showErrorDialog = false }) {
+                        Text("OK", color = Color(0xFF6B4E31))
                     }
                 },
                 containerColor = Color(0xFFFAF3E0),
