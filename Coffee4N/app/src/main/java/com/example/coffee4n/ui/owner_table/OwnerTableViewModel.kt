@@ -228,21 +228,24 @@ class OwnerTableViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             try {
                 if (currentState.currentTable != null) {
+                    // When editing, keep the existing status
                     val updatedTable = currentState.currentTable.copy(
                         tableNumber = currentState.tableNumberInput,
                         capacity = capacity,
-                        status = currentState.statusInput,
+                        // Keep the original status instead of using statusInput
+                        status = currentState.currentTable.status,
                         imageUrl = currentState.imageUrlInput
                     )
                     repository.addTable(updatedTable)
                     _state.update { it.copy(showAddEditDialog = false) }
                 } else {
+                    // For new tables, use "AVAILABLE" as default
                     val maxId = repository.getMaxTableId()
                     val newTable = Table(
                         id = maxId + 1,
                         tableNumber = currentState.tableNumberInput,
                         capacity = capacity,
-                        status = currentState.statusInput,
+                        status = "AVAILABLE", // Default status for new tables
                         imageUrl = currentState.imageUrlInput
                     )
                     repository.addTable(newTable)

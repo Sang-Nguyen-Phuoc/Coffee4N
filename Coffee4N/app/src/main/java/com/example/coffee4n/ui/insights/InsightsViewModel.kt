@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import android.util.Log
 
 class InsightsViewModel : ViewModel() {
     private val _state = MutableStateFlow(InsightsState())

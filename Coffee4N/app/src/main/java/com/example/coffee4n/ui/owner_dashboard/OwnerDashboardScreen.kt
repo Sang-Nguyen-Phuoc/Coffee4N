@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -53,8 +52,7 @@ fun OwnerDashboardScreen(navController: NavController) {
                         shape = RoundedCornerShape(50),
                         color = Color(0xFFC67C4E),
                         shadowElevation = 6.dp,
-                        modifier = Modifier
-                            .offset(x = (-12).dp)
+                        modifier = Modifier.offset(x = (-12).dp)
                     ) {
                         Box(
                             modifier = Modifier
@@ -85,7 +83,7 @@ fun OwnerDashboardScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Summary Cards (giữ nguyên)
+            // Summary Cards
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -103,13 +101,13 @@ fun OwnerDashboardScreen(navController: NavController) {
                 )
 
                 DashboardStatCard(
-                    title = "Daily Revenue",
-                    value = "$${state.dailyRevenue}",
-                    icon = Icons.Default.AttachMoney,
+                    title = "Table Requests",
+                    value = state.pendingTableRequests.toString(),
+                    icon = Icons.Default.EventSeat,
                     backgroundColor = Color(0xFFD8E2DC),
                     contentColor = Color(0xFF5A9280),
                     modifier = Modifier.weight(1f),
-                    onClick = { navController.navigate(Destinations.OWNER_ANALYTICS) }
+                    onClick = { navController.navigate(Destinations.OWNER_TABLES) }
                 )
             }
 
@@ -138,7 +136,7 @@ fun OwnerDashboardScreen(navController: NavController) {
                 )
             }
 
-            // NEW: Business Insights Card
+            // Business Insights Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -162,9 +160,7 @@ fun OwnerDashboardScreen(navController: NavController) {
                         tint = Color(0xFF7B61FF),
                         modifier = Modifier.size(36.dp)
                     )
-
                     Spacer(modifier = Modifier.width(16.dp))
-
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Business Insights",
@@ -177,7 +173,6 @@ fun OwnerDashboardScreen(navController: NavController) {
                             color = Color(0xFF6D6D6D)
                         )
                     }
-
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = "View",
@@ -186,7 +181,7 @@ fun OwnerDashboardScreen(navController: NavController) {
                 }
             }
 
-            // Booked Tables Card (giữ nguyên)
+            // Booked Tables Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -210,9 +205,7 @@ fun OwnerDashboardScreen(navController: NavController) {
                         tint = Color(0xFFC67C4E),
                         modifier = Modifier.size(36.dp)
                     )
-
                     Spacer(modifier = Modifier.width(16.dp))
-
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Booked Tables",
@@ -220,12 +213,11 @@ fun OwnerDashboardScreen(navController: NavController) {
                             color = Color(0xFF313131)
                         )
                         Text(
-                            text = state.bookedTables.toString() + " of 12 tables booked",
+                            text = "${state.bookedTables} of ${state.totalTables} tables booked",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF6D6D6D)
                         )
                     }
-
                     Box(
                         modifier = Modifier
                             .size(56.dp)
@@ -234,7 +226,11 @@ fun OwnerDashboardScreen(navController: NavController) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "${(state.bookedTables / 12.0 * 100).toInt()}%",
+                            text = if (state.totalTables > 0) {
+                                "${(state.bookedTables.toFloat() / state.totalTables * 100).toInt()}%"
+                            } else {
+                                "0%"
+                            },
                             style = MaterialTheme.typography.titleMedium,
                             color = Color(0xFFC67C4E),
                             fontWeight = FontWeight.Bold
@@ -243,72 +239,15 @@ fun OwnerDashboardScreen(navController: NavController) {
                 }
             }
 
-            // Recent Activity Section (giữ nguyên)
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White
-                ),
-                elevation = CardDefaults.cardElevation(2.dp),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = "Today's Overview",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFF313131),
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
+            // Recent Activity Section
+            TodaysOverviewCard(
+                activities = state.activities,
+                lowStockItems = state.lowStockItems,
+                error = state.error,
+                maxHeight = 300.dp // You can adjust this value based on your needs
+            )
 
-                    ActivityItem(
-                        title = "New order #1089",
-                        time = "10 minutes ago",
-                        icon = Icons.Default.ShoppingCart,
-                        color = Color(0xFFC67C4E)
-                    )
-
-                    Divider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        color = Color(0xFFEDEDED)
-                    )
-
-                    ActivityItem(
-                        title = "Inventory alert: Coffee beans low",
-                        time = "25 minutes ago",
-                        icon = Icons.Default.Warning,
-                        color = Color(0xFFE38B73)
-                    )
-
-                    Divider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        color = Color(0xFFEDEDED)
-                    )
-
-                    ActivityItem(
-                        title = "Table #3 reserved for 2:00 PM",
-                        time = "1 hour ago",
-                        icon = Icons.Default.EventSeat,
-                        color = Color(0xFF5A9280)
-                    )
-
-                    TextButton(
-                        onClick = { },
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Text(
-                            text = "View all activity",
-                            color = Color(0xFFC67C4E)
-                        )
-                    }
-                }
-            }
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -346,9 +285,7 @@ fun DashboardStatCard(
                 tint = contentColor,
                 modifier = Modifier.size(32.dp)
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineSmall,
@@ -356,7 +293,6 @@ fun DashboardStatCard(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
-
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodySmall,
@@ -369,7 +305,7 @@ fun DashboardStatCard(
 }
 
 @Composable
-fun ActivityItem(
+fun ActivityItemRow(
     title: String,
     time: String,
     icon: ImageVector,
@@ -378,13 +314,13 @@ fun ActivityItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(RoundedCornerShape(20.dp))
+                .clip(CircleShape)
                 .background(color.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center
         ) {
@@ -392,23 +328,23 @@ fun ActivityItem(
                 imageVector = icon,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(24.dp)
             )
         }
-
         Spacer(modifier = Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF313131)
             )
-
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = time,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF6D6D6D)
+                color = if (time == "Critical") Color(0xFFE38B73) else Color(0xFF6D6D6D)
             )
         }
     }
