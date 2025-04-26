@@ -253,7 +253,6 @@ fun OwnerTableScreen(viewModel: OwnerTableViewModel = viewModel()) {
             )
         }
 
-        // Add/Edit Dialog
         if (state.showAddEditDialog) {
             AlertDialog(
                 onDismissRequest = { viewModel.closeDialog() },
@@ -310,83 +309,7 @@ fun OwnerTableScreen(viewModel: OwnerTableViewModel = viewModel()) {
                             )
                         )
 
-                        var expanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(
-                            expanded = expanded,
-                            onExpandedChange = { expanded = !expanded },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            // For the Status dropdown
-                            OutlinedTextField(
-                                value = state.statusInput,
-                                onValueChange = { viewModel.updateStatusInput(it) },
-                                label = { Text("Status") },
-                                readOnly = true,
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Rounded.TableBar,
-                                        contentDescription = null,
-                                        tint = if (state.statusInput == "AVAILABLE") availableColor else bookedColor
-                                    )
-                                },
-                                modifier = Modifier
-                                    .menuAnchor()
-                                    .fillMaxWidth(),
-                                trailingIcon = {
-                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                                },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = primaryColor,
-                                    focusedLabelColor = primaryColor
-                                )
-                            )
-
-                            ExposedDropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false },
-                                modifier = Modifier.background(backgroundColor)
-                            ) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(12.dp)
-                                                    .background(availableColor, CircleShape)
-                                            )
-                                            Text("AVAILABLE")
-                                        }
-                                    },
-                                    onClick = {
-                                        viewModel.updateStatusInput("AVAILABLE")
-                                        expanded = false
-                                    }
-                                )
-
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(12.dp)
-                                                    .background(bookedColor, CircleShape)
-                                            )
-                                            Text("BOOKED")
-                                        }
-                                    },
-                                    onClick = {
-                                        viewModel.updateStatusInput("BOOKED")
-                                        expanded = false
-                                    }
-                                )
-                            }
-                        }
+                        // Status dropdown has been removed
 
                         // For the Image URL input
                         OutlinedTextField(
@@ -562,7 +485,12 @@ fun TableCard(
 ) {
     val state by viewModel.state.collectAsState()
     val pendingCount = state.pendingBookings[table.id] ?: 0
-    val bookingCount = state.bookingCount[table.id] ?: 0 // Tổng số đơn đặt bàn
+
+    // Get only CONFIRMED bookings for this table
+    val confirmedBookings = state.allBookings.filter {
+        it.tableId == table.id && it.status == "CONFIRMED"
+    }
+    val confirmedBookingCount = confirmedBookings.size
 
     Card(
         modifier = Modifier
@@ -609,17 +537,17 @@ fun TableCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Hiển thị số đơn đặt bàn
+                        // Hiển thị số đơn đặt bàn đã được xác nhận
                         Box(
                             modifier = Modifier
                                 .background(
-                                    color = if (bookingCount > 0) bookedColor else availableColor,
+                                    color = if (confirmedBookingCount > 0) bookedColor else availableColor,
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                text = "$bookingCount Bookings",
+                                text = "$confirmedBookingCount Confirmed",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -729,7 +657,7 @@ fun SummaryCard(
     bookingCount: Map<Int, Int>, // Thêm tham số mới
     modifier: Modifier = Modifier
 ) {
-    val availableTables = tables.count { it.status == "AVAILABLE" }
+
     val totalBookings = bookingCount.values.sum() // Tổng số đơn đặt bàn
     val totalCapacity = tables.sumOf { it.capacity }
 
@@ -757,22 +685,6 @@ fun SummaryCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = availableTables.toString(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = availableColor
-                    )
-                    Text(
-                        text = "Available",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {

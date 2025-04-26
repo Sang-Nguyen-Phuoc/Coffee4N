@@ -365,7 +365,7 @@ fun BookingSummaryCard(
     bookedColor: Color,
     modifier: Modifier = Modifier
 ) {
-    val availableTables = tables.count { it.status == "AVAILABLE" }
+
     val bookedTables = tables.count { it.status == "BOOKED" }
     val totalCapacity = tables.sumOf { it.capacity }
 
@@ -391,19 +391,6 @@ fun BookingSummaryCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = availableTables.toString(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = availableColor
-                    )
-                    Text(
-                        text = "Available",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
