@@ -80,7 +80,6 @@ class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
 
                 val remoteUser = userRepository.fetchRemoteUser(firebaseUser.uid)
                 if (remoteUser != null) {
-                    userRepository.syncUserToLocal(remoteUser)
                     _loginState.value = LoginState.Success(remoteUser.id, _token.value)
                 } else {
                     _loginState.value = LoginState.Error("User not found.")

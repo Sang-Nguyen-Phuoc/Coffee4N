@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.coffee4n.R
-import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -46,13 +45,12 @@ fun SignupScreen(navController: NavController) {
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Khởi tạo ViewModel với dependencies
-    val userDao = AppDatabase.getDatabase(context).userDao()
     val firebaseAuth = FirebaseAuth.getInstance()
     val firebaseDatabase = FirebaseDatabase.getInstance()
     val viewModel: SignupViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                return SignupViewModel(UserRepository(userDao, firebaseAuth, firebaseDatabase)) as T
+                return SignupViewModel(UserRepository(firebaseAuth, firebaseDatabase)) as T
             }
         }
     )

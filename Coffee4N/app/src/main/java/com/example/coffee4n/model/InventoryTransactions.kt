@@ -1,11 +1,7 @@
 package com.example.coffee4n.model
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "inventory_transactions")
 data class InventoryTransaction(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val id: Int = 0,
     val itemId: Int,
     val timestamp: Long, // epoch millis
     val quantity: Int,

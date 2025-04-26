@@ -4,7 +4,6 @@ import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.example.coffee4n.model.User
-import com.example.coffee4n.model.database.UserDao
 import com.example.coffee4n.session.LastIds
 import com.example.coffee4n.session.Models
 import com.example.coffee4n.session.OwnerSession
@@ -20,47 +19,55 @@ import kotlinx.coroutines.tasks.await
 import kotlin.coroutines.resumeWithException
 
 class UserRepository(
-    private val userDao: UserDao,
     private val firebaseAuth: FirebaseAuth,
     private val firebaseDatabase: FirebaseDatabase
 ) {
     private val lastUserIdRef = firebaseDatabase.getReference(OwnerSession.getMetadataPath(lastModelId = LastIds.User))
     private val userRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.User))
 
+    // Cache để lưu user đã fetch từ Firebase (thay thế cho Room)
+    private val userCache = mutableMapOf<Int, User>()
+
     suspend fun getUserById(userId: Int): User? {
-        // Try to get user from Room first
-        var user = userDao.getUserById(userId)
+        // Kiểm tra trong cache
+        userCache[userId]?.let { return it }
 
-        // If not found in Room, fetch from Firebase
-        if (user == null) {
-            try {
-                val snapshot = userRef.child(userId.toString()).get().await()
-                user = snapshot.getValue(User::class.java)
-            } catch (e: Exception) {
-                Log.e("UserRepository", "Failed to fetch user $userId from Firebase: ${e.message}")
-            }
-        }
-        return user
-    }
-
-    suspend fun syncUserFromRemote(userId: Int) {
-        val firebaseUser = firebaseAuth.currentUser
-        if (firebaseUser != null) {
+        try {
             val snapshot = userRef.child(userId.toString()).get().await()
             val user = snapshot.getValue(User::class.java)
-            user?.let { userDao.insertUser(it) }
+            user?.let { userCache[userId] = it }
+            return user
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Failed to fetch user $userId from Firebase: ${e.message}")
         }
+        return null
     }
 
     suspend fun updateUser(user: User) {
-        userDao.updateUser(user)
+        // Cập nhật cache
+        userCache[user.id] = user
+        // Cập nhật Firebase
         userRef.child(user.id.toString()).setValue(user).await()
     }
 
     fun getUserFlow(userId: Int): Flow<User?> = flow {
-        emit(userDao.getUserById(userId))
-        syncUserFromRemote(userId)
-        emit(userDao.getUserById(userId))
+        // Emit từ cache trước nếu có
+        emit(userCache[userId])
+        // Sau đó fetch từ remote và emit lại
+        val user = fetchUserFromRemote(userId)
+        emit(user)
+    }
+
+    private suspend fun fetchUserFromRemote(userId: Int): User? {
+        try {
+            val snapshot = userRef.child(userId.toString()).get().await()
+            val user = snapshot.getValue(User::class.java)
+            user?.let { userCache[userId] = it }
+            return user
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Failed to fetch user $userId from Firebase: ${e.message}")
+        }
+        return null
     }
 
     // Đăng ký user mới
@@ -82,7 +89,8 @@ class UserRepository(
 
                 // Lưu vào Firebase theo ID số nguyên
                 userRef.child(userId.toString()).setValue(user).await()
-                userDao.insertUser(user)
+                // Lưu vào cache
+                userCache[userId] = user
                 userId
             } else null
         } catch (e: Exception) {
@@ -102,22 +110,9 @@ class UserRepository(
 
     suspend fun fetchRemoteUser(firebaseUid: String): User? {
         val snapshot = userRef.orderByChild("firebaseUid").equalTo(firebaseUid).get().await()
-        return snapshot.children.firstOrNull()?.getValue(User::class.java)
-    }
-
-    suspend fun syncUserToLocal(user: User) {
-        val localUser = userDao.getUserById(user.id)
-
-        if (localUser != null) {
-            val updatedUser = localUser.copy(
-                username = user.username,
-                email = user.email,
-                phone = user.phone,
-            )
-            userDao.updateUser(updatedUser)
-        } else {
-            userDao.insertOrUpdateUser(user)
-        }
+        val user = snapshot.children.firstOrNull()?.getValue(User::class.java)
+        user?.let { userCache[it.id] = it }
+        return user
     }
 
     // Đăng nhập và trả về ID số nguyên
@@ -130,25 +125,11 @@ class UserRepository(
                 val snapshot = userRef.orderByChild("firebaseUid").equalTo(fu.uid).get().await()
 
                 snapshot.children.firstOrNull()?.let { child ->
-                    val remoteUser = child.getValue(User::class.java)
-                    remoteUser?.let { user ->
-                        // Kiểm tra user đã tồn tại trong local DB chưa
-                        val localUser = userDao.getUserById(user.id)
-
-                        if (localUser != null) {
-                            // Cập nhật các trường cần thiết từ remote sang local
-                            val updatedUser = localUser.copy(
-                                username = user.username,
-                                email = user.email,
-                                phone = user.phone,
-                                // ... các trường khác cần cập nhật
-                            )
-                            userDao.updateUser(updatedUser)
-                        } else {
-                            userDao.insertOrUpdateUser(user)
-                        }
-
-                        return user.id
+                    val user = child.getValue(User::class.java)
+                    user?.let {
+                        // Lưu vào cache
+                        userCache[it.id] = it
+                        return it.id
                     }
                 }
             }
@@ -210,13 +191,17 @@ class UserRepository(
             })
         }
     }
-    suspend fun syncUserByFirebaseUid(firebaseUid: String) {
+
+    suspend fun syncUserByFirebaseUid(firebaseUid: String): User? {
         val snapshot = userRef
             .orderByChild("firebaseUid").equalTo(firebaseUid).get().await()
 
-        snapshot.children.firstOrNull()?.let { ds ->
+        return snapshot.children.firstOrNull()?.let { ds ->
             val user = ds.getValue(User::class.java)
-            user?.let { userDao.insertUser(it) }
+            user?.let {
+                userCache[it.id] = it
+                it
+            }
         }
     }
 
@@ -229,5 +214,10 @@ class UserRepository(
         } catch (e: Exception) {
             false
         }
+    }
+
+    // Xóa cache khi logout
+    fun clearCache() {
+        userCache.clear()
     }
 }

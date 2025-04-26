@@ -1,12 +1,9 @@
 package com.example.coffee4n.model
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
 import java.util.Date
 
-@Entity(tableName = "order")
 data class Order(
-    @PrimaryKey val id: Int,
+    val id: Int,
     val userId: Int = 0,
     val orderDate: Date = Date(),
     val totalAmount: Double = 0.0,
