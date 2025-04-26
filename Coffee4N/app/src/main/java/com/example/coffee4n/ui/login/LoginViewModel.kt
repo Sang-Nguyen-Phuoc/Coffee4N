@@ -119,4 +119,40 @@ class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
     fun resetLoginState() {
         _loginState.value = LoginState.Idle
     }
+
+
+    fun signInWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            try {
+                _loginState.value = LoginState.Loading
+                val userId = userRepository.signInWithGoogle(idToken)
+                if (userId != null) {
+                    val token = userRepository.getAuthToken()
+                    _loginState.value = LoginState.Success(userId, token)
+                } else {
+                    _loginState.value = LoginState.Error("Google login failed")
+                }
+            } catch (e: Exception) {
+                _loginState.value = LoginState.Error(e.message ?: "Google login failed")
+            }
+        }
+    }
+
+    fun signInWithFacebook(token: String) {
+        viewModelScope.launch {
+            try {
+                _loginState.value = LoginState.Loading
+                val userId = userRepository.signInWithFacebook(token)
+                if (userId != null) {
+                    val token = userRepository.getAuthToken()
+                    _loginState.value = LoginState.Success(userId, token)
+                } else {
+                    _loginState.value = LoginState.Error("Facebook login failed")
+                }
+            } catch (e: Exception) {
+                _loginState.value = LoginState.Error(e.message ?: "Facebook login failed")
+            }
+        }
+    }
+
 }
