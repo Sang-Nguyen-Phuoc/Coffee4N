@@ -9,6 +9,7 @@ import com.example.coffee4n.model.Promotion
 import com.example.coffee4n.repository.OrderItemRepository
 import com.example.coffee4n.repository.OrderRepository
 import com.example.coffee4n.repository.PromotionRepository
+import com.example.coffee4n.repository.UserRepository
 import com.example.coffee4n.ui.cart.CartViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +23,7 @@ class CheckoutViewModel(
     private val promotionRepository: PromotionRepository,
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
+    private val userRepository: UserRepository,
     private val userId: Int
 ) : ViewModel() {
 
@@ -60,13 +62,13 @@ class CheckoutViewModel(
                 when {
                     promotion == null -> _state.update {
                         it.copy(
-                            errorMessage = "Voucher không tồn tại",
+                            errorMessage = "Voucher does not exist",
                             isApplyingVoucher = false
                         )
                     }
                     !promotion.isValid() -> _state.update {
                         it.copy(
-                            errorMessage = "Voucher đã hết hạn",
+                            errorMessage = "Voucher expired",
                             isApplyingVoucher = false
                         )
                     }
@@ -99,8 +101,41 @@ class CheckoutViewModel(
         _state.update { it.copy(successMessage = null) }
     }
 
-    fun showConfirmDialog() {
-        _state.update { it.copy(showConfirmDialog = true) }
+    fun clearErrorMessage() {
+        _state.update { it.copy(errorMessage = null) }
+    }
+
+    fun showConfirmDialog(deliveryMethod: String) {
+        viewModelScope.launch {
+            if (deliveryMethod == "SHIPPING") {
+                try {
+                    val user = userRepository.getUserById(userId) ?: run {
+                        _state.update {
+                            it.copy(
+                                errorMessage = "Không tìm thấy thông tin người dùng"
+                            )
+                        }
+                        return@launch
+                    }
+                    if (user.address.isNullOrBlank() || user.phone.isNullOrBlank()) {
+                        _state.update {
+                            it.copy(
+                                errorMessage = "Please leave your address and phone number at profile"
+                            )
+                        }
+                        return@launch
+                    }
+                } catch (e: Exception) {
+                    _state.update {
+                        it.copy(
+                            errorMessage = "Lỗi khi kiểm tra thông tin người dùng: ${e.message}"
+                        )
+                    }
+                    return@launch
+                }
+            }
+            _state.update { it.copy(showConfirmDialog = true) }
+        }
     }
 
     fun hideConfirmDialog() {
@@ -146,7 +181,8 @@ class CheckoutViewModel(
                 cartViewModel.clearCart()
                 _state.update {
                     it.copy(
-                        showConfirmDialog = false
+                        showConfirmDialog = false,
+                        successMessage = "Thanh toán thành công!"
                     )
                 }
                 onSuccess()
@@ -176,6 +212,7 @@ class CheckoutViewModelFactory(
     private val promotionRepository: PromotionRepository,
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
+    private val userRepository: UserRepository,
     private val userId: Int
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
@@ -186,6 +223,7 @@ class CheckoutViewModelFactory(
                 promotionRepository,
                 orderRepository,
                 orderItemRepository,
+                userRepository,
                 userId
             ) as T
         }

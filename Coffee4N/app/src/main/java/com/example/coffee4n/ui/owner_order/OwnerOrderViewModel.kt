@@ -8,6 +8,7 @@ import com.example.coffee4n.repository.OrderItemRepository
 import com.example.coffee4n.repository.OrderRepository
 import com.example.coffee4n.repository.ProductRepository
 import com.example.coffee4n.repository.PromotionRepository
+import com.example.coffee4n.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -18,7 +19,8 @@ class OwnerOrderViewModel(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val productRepository: ProductRepository,
-    private val promotionRepository: PromotionRepository
+    private val promotionRepository: PromotionRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(OwnerOrderState(isLoading = true))
@@ -183,10 +185,16 @@ class OwnerOrderViewModel(
                 it.copy(
                     selectedOrderId = orderId,
                     orderItems = emptyList(),
+                    customer = null,
                     isLoadingOrderItems = true
                 )
             }
             try {
+                // Fetch customer
+                val order = state.value.orders.find { it.id == orderId }
+                val customer = order?.userId?.let { userRepository.getUserById(it) }
+
+                // Fetch order items
                 orderItemRepository.getOrderItemsByOrderId(orderId).collect { items ->
                     val orderItemsWithName = items.map { item ->
                         val product = try {
@@ -204,6 +212,7 @@ class OwnerOrderViewModel(
                     }
                     _state.update {
                         it.copy(
+                            customer = customer,
                             orderItems = orderItemsWithName,
                             isLoadingOrderItems = false
                         )
@@ -213,7 +222,7 @@ class OwnerOrderViewModel(
                 _state.update {
                     it.copy(
                         isLoadingOrderItems = false,
-                        error = "Failed to load order items: ${e.message}"
+                        error = "Failed to load order details: ${e.message}"
                     )
                 }
             }
@@ -224,6 +233,7 @@ class OwnerOrderViewModel(
         _state.update {
             it.copy(
                 selectedOrderId = null,
+                customer = null,
                 orderItems = emptyList(),
                 isLoadingOrderItems = false
             )
@@ -248,7 +258,7 @@ class OwnerOrderViewModel(
                         promotionSuccessMessage = "Promotion ${addedPromotion.code} added successfully with ID ${addedPromotion.id}"
                     )
                 }
-                loadPromotions() // Reload promotions to update the list
+                loadPromotions()
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
@@ -270,7 +280,7 @@ class OwnerOrderViewModel(
                         promotionSuccessMessage = "Promotion #$promotionId deleted successfully"
                     )
                 }
-                loadPromotions() // Reload promotions to update the list
+                loadPromotions()
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
@@ -311,7 +321,8 @@ class OwnerOrderViewModelFactory(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val productRepository: ProductRepository,
-    private val promotionRepository: PromotionRepository
+    private val promotionRepository: PromotionRepository,
+    private val userRepository: UserRepository
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -320,7 +331,8 @@ class OwnerOrderViewModelFactory(
                 orderRepository,
                 orderItemRepository,
                 productRepository,
-                promotionRepository
+                promotionRepository,
+                userRepository
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

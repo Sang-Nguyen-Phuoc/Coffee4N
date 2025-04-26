@@ -9,62 +9,21 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -74,13 +33,27 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.coffee4n.model.Order
 import com.example.coffee4n.model.Promotion
+import com.example.coffee4n.model.User
+import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.repository.OrderItemRepository
 import com.example.coffee4n.repository.OrderRepository
 import com.example.coffee4n.repository.ProductRepository
 import com.example.coffee4n.repository.PromotionRepository
+import com.example.coffee4n.repository.UserRepository
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import java.text.SimpleDateFormat
-import java.util.Locale
+import java.util.*
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.ui.res.painterResource
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,19 +63,25 @@ fun OwnerOrderScreen(navController: NavController) {
     val orderItemRepository = OrderItemRepository(firebaseDatabase)
     val productRepository = ProductRepository(firebaseDatabase)
     val promotionRepository = PromotionRepository(firebaseDatabase)
+    val context = LocalContext.current
+    val userRepository = UserRepository(
+        userDao = AppDatabase.getDatabase(context).userDao(),
+        firebaseAuth = FirebaseAuth.getInstance(),
+        firebaseDatabase = firebaseDatabase
+    )
     val viewModel: OwnerOrderViewModel = viewModel(
         factory = OwnerOrderViewModelFactory(
             orderRepository,
             orderItemRepository,
             productRepository,
-            promotionRepository
+            promotionRepository,
+            userRepository
         )
     )
     val state by viewModel.state.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Show Snackbar for success messages
     state.successMessage?.let { message ->
         LaunchedEffect(message) {
             snackbarHostState.showSnackbar(message)
@@ -176,12 +155,12 @@ fun OwnerOrderScreen(navController: NavController) {
             }
         }
 
-        // Order detail dialog
         state.selectedOrderId?.let { orderId ->
             val order = state.filteredOrders.find { it.id == orderId }
             order?.let {
                 OrderDetailDialog(
                     order = it,
+                    customer = state.customer,
                     orderItems = state.orderItems,
                     isLoadingItems = state.isLoadingOrderItems,
                     onDismiss = { viewModel.hideOrderDetails() }
@@ -189,7 +168,6 @@ fun OwnerOrderScreen(navController: NavController) {
             }
         }
 
-        // Add promotion dialog
         if (state.showAddPromotionDialog) {
             AddPromotionDialog(
                 onDismiss = { viewModel.hideAddPromotionDialog() },
@@ -201,11 +179,9 @@ fun OwnerOrderScreen(navController: NavController) {
     }
 }
 
-
 @Composable
 fun OrderContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Status filter
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -266,7 +242,6 @@ fun OrderContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
             }
         }
 
-        // Loading state for initial load
         AnimatedVisibility(
             visible = state.isLoading && state.currentOrderPage == 1,
             enter = fadeIn(),
@@ -310,7 +285,6 @@ fun OrderContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
             }
         }
 
-        // Error state
         AnimatedVisibility(
             visible = !state.isLoading && state.error != null,
             enter = fadeIn(),
@@ -348,7 +322,6 @@ fun OrderContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
             }
         }
 
-        // Order list with pagination
         AnimatedVisibility(
             visible = !state.isLoading && state.error == null,
             enter = slideInVertically(initialOffsetY = { 200 }) + fadeIn(),
@@ -406,7 +379,6 @@ fun OrderContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
                         )
                     }
 
-                    // Enhanced loading indicator for pagination
                     if (state.hasMoreOrders && state.isLoading) {
                         item {
                             AnimatedVisibility(
@@ -454,7 +426,6 @@ fun OrderContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
                     }
                 }
 
-                // Detect when the user scrolls to the end of the list
                 LaunchedEffect(listState) {
                     snapshotFlow { listState.layoutInfo.visibleItemsInfo }
                         .collect { visibleItems ->
@@ -473,11 +444,9 @@ fun OrderContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
     }
 }
 
-
 @Composable
 fun PromotionContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Search bar and add promotion button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -517,12 +486,11 @@ fun PromotionContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
                     text = "+",
                     color = Color.White,
                     fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
 
-        // Loading state
         AnimatedVisibility(
             visible = state.isLoadingPromotions,
             enter = fadeIn(),
@@ -536,7 +504,6 @@ fun PromotionContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
             }
         }
 
-        // Error state
         AnimatedVisibility(
             visible = !state.isLoadingPromotions && state.promotionError != null,
             enter = fadeIn(),
@@ -552,7 +519,6 @@ fun PromotionContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
             }
         }
 
-        // Promotion list
         AnimatedVisibility(
             visible = !state.isLoadingPromotions && state.promotionError == null,
             enter = slideInVertically(initialOffsetY = { 200 }) + fadeIn(),
@@ -690,10 +656,12 @@ fun OrderCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderDetailDialog(
     order: Order,
-    orderItems: List<Any>,
+    customer: User?,
+    orderItems: List<OrderItemWithName>,
     isLoadingItems: Boolean,
     onDismiss: () -> Unit
 ) {
@@ -723,6 +691,23 @@ fun OrderDetailDialog(
                         color = Color(0xFF313131)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Customer: ${customer?.name ?: "Unknown"}",
+                        fontSize = 14.sp,
+                        color = Color(0xFF8D7A55)
+                    )
+                    Text(
+                        text = "Phone: ${customer?.phone ?: "Unknown"}",
+                        fontSize = 14.sp,
+                        color = Color(0xFF8D7A55)
+                    )
+                    if (order.deliveryMethod == "SHIPPING") {
+                        Text(
+                            text = "Address: ${customer?.address ?: "Unknown"}",
+                            fontSize = 14.sp,
+                            color = Color(0xFF8D7A55)
+                        )
+                    }
                     Text(
                         text = "Date: ${
                             order.orderDate?.let {
@@ -794,7 +779,7 @@ fun OrderDetailDialog(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 items(orderItems) { item ->
-                                    OrderItemRow(item as OrderItemWithName)
+                                    OrderItemRow(item)
                                 }
                             }
                         }
@@ -967,10 +952,49 @@ fun AddPromotionDialog(
     var description by remember { mutableStateOf("") }
     var discountType by remember { mutableStateOf("PERCENTAGE") }
     var discountValue by remember { mutableStateOf("") }
-    var startDate by remember { mutableStateOf("") }
-    var endDate by remember { mutableStateOf("") }
+    var startDateMillis by remember { mutableStateOf<Long?>(null) }
+    var endDateMillis by remember { mutableStateOf<Long?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var expanded by remember { mutableStateOf(false) }
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
+
+    // Formatter để hiển thị ngày
+    val dateFormatter = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+
+    // Hàm để hiển thị DatePickerDialog
+    @Composable
+    fun showDatePickerDialog(
+        initialDate: Long?,
+        onDateSelected: (Long) -> Unit,
+        onDismiss: () -> Unit
+    ) {
+        val calendar = Calendar.getInstance()
+        initialDate?.let { calendar.timeInMillis = it }
+
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialDate ?: System.currentTimeMillis()
+        )
+
+        DatePickerDialog(
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { onDateSelected(it) }
+                        onDismiss()
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         AnimatedVisibility(
@@ -1091,10 +1115,18 @@ fun AddPromotionDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
-                        value = startDate,
-                        onValueChange = { startDate = it },
-                        label = { Text("Start Date (yyyy-MM-dd)") },
-                        modifier = Modifier.fillMaxWidth(),
+                        value = startDateMillis?.let { dateFormatter.format(Date(it)) } ?: "",
+                        onValueChange = {},
+                        label = { Text("Start Date") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showStartDatePicker = true },
+                        readOnly = true,
+                        trailingIcon = {
+                            IconButton(onClick = { showStartDatePicker = true }) {
+                                Icon(Icons.Default.CalendarToday, contentDescription = "Select start date")
+                            }
+                        },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
@@ -1106,10 +1138,18 @@ fun AddPromotionDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
-                        value = endDate,
-                        onValueChange = { endDate = it },
-                        label = { Text("End Date (yyyy-MM-dd)") },
-                        modifier = Modifier.fillMaxWidth(),
+                        value = endDateMillis?.let { dateFormatter.format(Date(it)) } ?: "",
+                        onValueChange = {},
+                        label = { Text("End Date") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showEndDatePicker = true },
+                        readOnly = true,
+                        trailingIcon = {
+                            IconButton(onClick = { showEndDatePicker = true }) {
+                                Icon(Icons.Default.CalendarToday, contentDescription = "Select end date")
+                            }
+                        },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
@@ -1155,42 +1195,33 @@ fun AddPromotionDialog(
                                 try {
                                     val parsedDiscountValue = discountValue.toDoubleOrNull()
                                         ?: throw IllegalArgumentException("Invalid discount value")
-                                    val parsedStartDate = try {
-                                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(startDate)
-                                            ?: throw IllegalArgumentException("Invalid start date")
-                                    } catch (e: Exception) {
-                                        throw IllegalArgumentException("Invalid start date format")
-                                    }
-                                    val parsedEndDate = try {
-                                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(endDate)
-                                            ?: throw IllegalArgumentException("Invalid end date")
-                                    } catch (e: Exception) {
-                                        throw IllegalArgumentException("Invalid end date format")
-                                    }
                                     if (code.isBlank() || description.isBlank()) {
                                         throw IllegalArgumentException("Code and description cannot be empty")
                                     }
-                                    if (parsedStartDate.after(parsedEndDate)) {
-                                        throw IllegalArgumentException("Start date must be before end date")
+                                    val startDate = startDateMillis?.let { Date(it) }
+                                        ?: throw IllegalArgumentException("Start date is required")
+                                    val endDate = endDateMillis?.let { Date(it) }
+                                        ?: throw IllegalArgumentException("End date is required")
+                                    if (startDate.after(endDate) || startDate == endDate) {
+                                        throw IllegalArgumentException("End date must be after start date")
                                     }
                                     val promotion = Promotion(
-                                        id = 0, // Temporary ID, will be auto-generated in repository
+                                        id = 0,
                                         code = code,
                                         description = description,
                                         discountType = discountType,
                                         discountValue = parsedDiscountValue,
-                                        startDate = parsedStartDate,
-                                        endDate = parsedEndDate,
+                                        startDate = startDate,
+                                        endDate = endDate,
                                         isActive = true
                                     )
                                     onAddPromotion(promotion)
-                                    // Clear inputs after successful submission
                                     code = ""
                                     description = ""
                                     discountType = "PERCENTAGE"
                                     discountValue = ""
-                                    startDate = ""
-                                    endDate = ""
+                                    startDateMillis = null
+                                    endDateMillis = null
                                     errorMessage = null
                                 } catch (e: Exception) {
                                     errorMessage = e.message
@@ -1215,5 +1246,23 @@ fun AddPromotionDialog(
                 }
             }
         }
+    }
+
+    // Hiển thị DatePickerDialog cho Start Date
+    if (showStartDatePicker) {
+        showDatePickerDialog(
+            initialDate = startDateMillis,
+            onDateSelected = { startDateMillis = it },
+            onDismiss = { showStartDatePicker = false }
+        )
+    }
+
+    // Hiển thị DatePickerDialog cho End Date
+    if (showEndDatePicker) {
+        showDatePickerDialog(
+            initialDate = endDateMillis,
+            onDateSelected = { endDateMillis = it },
+            onDismiss = { showEndDatePicker = false }
+        )
     }
 }
