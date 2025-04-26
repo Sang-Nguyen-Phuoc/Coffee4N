@@ -7,7 +7,6 @@ import com.example.coffee4n.model.User
 import com.example.coffee4n.session.LastIds
 import com.example.coffee4n.session.Models
 import com.example.coffee4n.session.OwnerSession
-import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.DataSnapshot
@@ -261,40 +260,5 @@ class UserRepository(
         }
     }
 
-    // Facebook authentication
-    suspend fun signInWithFacebook(token: String): Int? {
-        return try {
-            val credential = FacebookAuthProvider.getCredential(token)
-            val authResult = firebaseAuth.signInWithCredential(credential).await()
-            val firebaseUser = authResult.user
 
-            if (firebaseUser != null) {
-                // Check if user already exists
-                val existingUser = syncUserByFirebaseUid(firebaseUser.uid)
-                if (existingUser != null) {
-                    return existingUser.id
-                }
-
-                // Create new user if not exists
-                val userId = getNextUserId()
-                val user = User(
-                    id = userId,
-                    firebaseUid = firebaseUser.uid,
-                    username = firebaseUser.displayName ?: "",
-                    email = firebaseUser.email ?: "",
-                    phone = firebaseUser.phoneNumber ?: "",
-                    name = firebaseUser.displayName ?: "",
-                    address = ""
-                )
-
-                // Save to Firebase and cache
-                userRef.child(userId.toString()).setValue(user).await()
-                userCache[userId] = user
-                userId
-            } else null
-        } catch (e: Exception) {
-            Log.e("UserRepository", "Facebook sign-in failed: ${e.message}")
-            null
-        }
-    }
 }

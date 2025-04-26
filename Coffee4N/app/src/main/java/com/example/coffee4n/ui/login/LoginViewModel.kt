@@ -138,21 +138,6 @@ class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
         }
     }
 
-    fun signInWithFacebook(token: String) {
-        viewModelScope.launch {
-            try {
-                _loginState.value = LoginState.Loading
-                val userId = userRepository.signInWithFacebook(token)
-                if (userId != null) {
-                    val token = userRepository.getAuthToken()
-                    _loginState.value = LoginState.Success(userId, token)
-                } else {
-                    _loginState.value = LoginState.Error("Facebook login failed")
-                }
-            } catch (e: Exception) {
-                _loginState.value = LoginState.Error(e.message ?: "Facebook login failed")
-            }
-        }
-    }
+
 
 }

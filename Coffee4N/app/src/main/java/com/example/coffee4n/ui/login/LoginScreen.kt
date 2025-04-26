@@ -49,11 +49,6 @@ import com.example.coffee4n.R
 import com.example.coffee4n.model.Owner
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.UserRepository
-import com.facebook.CallbackManager
-import com.facebook.FacebookCallback
-import com.facebook.FacebookException
-import com.facebook.login.LoginManager
-import com.facebook.login.LoginResult
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -269,30 +264,18 @@ fun LoginScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    IconButton(onClick = { }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_facebook),
-                            contentDescription = "Facebook Login",
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
+
                     IconButton(onClick = {
                         val signInIntent = googleSignInClient.signInIntent
                         googleSignInLauncher.launch(signInIntent)
                     }) {
                         Image(
-                            painter = painterResource(id = R.drawable.ic_google),
+                            painter = painterResource(id = R.drawable.ic_google_png),
                             contentDescription = "Google Login",
                             modifier = Modifier.size(40.dp)
                         )
                     }
-                    IconButton(onClick = { /* Handle Apple login */ }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_apple),
-                            contentDescription = "Apple Login",
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
+
                 }
                 Spacer(modifier = Modifier.height(16.dp))
 
