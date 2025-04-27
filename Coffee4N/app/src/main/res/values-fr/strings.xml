@@ -6,6 +6,10 @@
     <string name="choose_store">Choisir un magasin</string>
     <string name="no_stores_available">Aucun magasin disponible</string>
     <string name="visit_another_store">Visiter un autre magasin</string>
+    <string name="welcome_message_subtitle">Découvrez vos cafés préférés</string>
+    <string name="open_now">Ouvert maintenant</string>
+    <string name="loading_stores">Chargement des magasins...</string>
+    <string name="no_stores_message">Veuillez revenir plus tard ou contacter le support</string>
 
     <!-- Login Screen -->
     <string name="welcome_message">Bienvenue! Ravi de vous voir!</string>

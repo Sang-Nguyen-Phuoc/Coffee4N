@@ -6,6 +6,10 @@
     <string name="choose_store">Chọn Cửa Hàng</string>
     <string name="no_stores_available">Không có cửa hàng nào</string>
     <string name="visit_another_store">Ghé cửa hàng khác</string>
+    <string name="welcome_message_subtitle">Khám phá những quán cà phê yêu thích của bạn</string>
+    <string name="open_now">Đang mở cửa</string>
+    <string name="loading_stores">Đang tải danh sách cửa hàng...</string>
+    <string name="no_stores_message">Vui lòng quay lại sau hoặc liên hệ hỗ trợ</string>
 
     <!-- Login Screen -->
     <string name="welcome_message">Chào mừng! Rất vui được gặp bạn!</string>

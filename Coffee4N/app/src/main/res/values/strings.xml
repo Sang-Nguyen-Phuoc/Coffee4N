@@ -6,6 +6,10 @@
     <string name="choose_store">Choose Store</string>
     <string name="no_stores_available">No stores available</string>
     <string name="visit_another_store">Visit another store</string>
+    <string name="welcome_message_subtitle">Discover your favorite coffee spots</string>
+    <string name="open_now">Open Now</string>
+    <string name="loading_stores">Loading stores...</string>
+    <string name="no_stores_message">Please check back later or contact support</string>
 
     <!-- Login Screen -->
     <string name="welcome_message">Welcome! Glad to see you!</string>
