@@ -272,9 +272,28 @@ class OwnerOrderViewModel(
         viewModelScope.launch {
             _state.update { it.copy(updatingOrderId = orderId) }
             try {
+                // Cập nhật trạng thái trên Firebase
                 orderRepository.updateOrderStatus(orderId, "COMPLETE")
-                _state.update {
-                    it.copy(
+                // Cập nhật danh sách orders trong state để phản ánh thay đổi ngay lập tức
+                _state.update { currentState ->
+                    val updatedOrders = currentState.orders.map { order ->
+                        if (order.id == orderId) {
+                            order.copy(
+                                status = "COMPLETE",
+                                id = order.id,                  // Giữ nguyên id
+                                userId = order.userId,          // Giữ nguyên userId
+                                orderDate = order.orderDate,    // Giữ nguyên orderDate
+                                totalAmount = order.totalAmount,// Giữ nguyên totalAmount
+                                deliveryMethod = order.deliveryMethod // Giữ nguyên deliveryMethod
+                            )
+                        } else {
+                            order
+                        }
+                    }
+                    val updatedFilteredOrders = applyFilters(updatedOrders, currentState.filterStatus, currentState.orderSearchQuery)
+                    currentState.copy(
+                        orders = updatedOrders,
+                        filteredOrders = updatedFilteredOrders,
                         updatingOrderId = null,
                         successMessage = "Order #$orderId marked as Complete"
                     )

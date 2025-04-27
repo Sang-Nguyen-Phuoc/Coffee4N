@@ -13,6 +13,5 @@ data class Order(
     val status: String = "PENDING",
     val deliveryMethod: String = ""
 ) {
-    // Thêm constructor không tham số cho Firebase
     constructor() : this(0, 0, Date(), 0.0, "PENDING", "")
 }
