@@ -98,6 +98,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("com.google.ai.client.generativeai:generativeai:0.2.0")
 
+    // For Google Auth
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit.v115)
     androidTestImplementation(libs.espresso.core)

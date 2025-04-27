@@ -1,6 +1,8 @@
 package com.example.coffee4n.ui.signup
 
 import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -34,15 +36,20 @@ import androidx.navigation.NavController
 import com.example.coffee4n.R
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.UserRepository
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignupScreen(navController: NavController) {
+
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
     val snackbarHostState = remember { SnackbarHostState() }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Khởi tạo ViewModel với dependencies
     val firebaseAuth = FirebaseAuth.getInstance()
@@ -65,6 +72,35 @@ fun SignupScreen(navController: NavController) {
     // Trạng thái toggle hiển thị mật khẩu
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+
+    val googleSignInClient = remember {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(context.getString(R.string.default_web_client_id)) // Use your explicit string resource
+            .requestEmail()
+            .build()
+        GoogleSignIn.getClient(context, gso)
+    }
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            account?.idToken?.let { idToken ->
+                viewModel.signUpWithGoogle(idToken)
+            }
+        } catch (e: ApiException) {
+            errorMessage = "Google sign-up failed: ${e.message}"
+        }
+    }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            errorMessage = null
+        }
+    }
 
     // Xử lý side effects
     LaunchedEffect(signupState.value) {
@@ -228,24 +264,13 @@ fun SignupScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                IconButton(onClick = { /* Handle Facebook signup */ }) {
+                IconButton(onClick = { /* Handle Google signup */
+                    val signInIntent = googleSignInClient.signInIntent
+                    googleSignInLauncher.launch(signInIntent)
+                }) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_facebook),
-                        contentDescription = "Facebook Signup",
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
-                IconButton(onClick = { /* Handle Google signup */ }) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_google),
+                        painter = painterResource(id = R.drawable.ic_google_png),
                         contentDescription = "Google Signup",
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
-                IconButton(onClick = { /* Handle Apple signup */ }) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_apple),
-                        contentDescription = "Apple Signup",
                         modifier = Modifier.size(40.dp)
                     )
                 }

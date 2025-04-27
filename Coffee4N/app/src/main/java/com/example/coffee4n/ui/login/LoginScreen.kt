@@ -1,7 +1,10 @@
 package com.example.coffee4n.ui.login
 
+import android.app.Activity
 import android.content.Context
 import android.widget.Space
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,6 +19,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -45,6 +49,9 @@ import com.example.coffee4n.R
 import com.example.coffee4n.model.Owner
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.UserRepository
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
@@ -78,6 +85,31 @@ fun LoginScreen(navController: NavController) {
 
     // Password visibility toggle
     var passwordVisible by remember { mutableStateOf(false) }
+
+    val googleSignInClient = remember {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(context.getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+        GoogleSignIn.getClient(context, gso)
+    }
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            account?.idToken?.let { idToken ->
+                viewModel.signInWithGoogle(idToken)
+            }
+        } catch (e: ApiException) {
+            scope.launch {
+                snackbarHostState.showSnackbar("Google sign-in failed: ${e.message}")
+            }
+        }
+    }
+
 
     // Xử lý hiệu ứng phụ từ loginState
     LaunchedEffect(loginState.value) {
@@ -232,27 +264,18 @@ fun LoginScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    IconButton(onClick = { /* Handle Facebook login */ }) {
+
+                    IconButton(onClick = {
+                        val signInIntent = googleSignInClient.signInIntent
+                        googleSignInLauncher.launch(signInIntent)
+                    }) {
                         Image(
-                            painter = painterResource(id = R.drawable.ic_facebook),
-                            contentDescription = "Facebook Login",
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                    IconButton(onClick = { /* Handle Google login */ }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_google),
+                            painter = painterResource(id = R.drawable.ic_google_png),
                             contentDescription = "Google Login",
                             modifier = Modifier.size(40.dp)
                         )
                     }
-                    IconButton(onClick = { /* Handle Apple login */ }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_apple),
-                            contentDescription = "Apple Login",
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
+
                 }
                 Spacer(modifier = Modifier.height(16.dp))
 

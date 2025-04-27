@@ -39,6 +39,22 @@ class SignupViewModel(private val userRepository: UserRepository) : ViewModel() 
         _confirmPassword.value = newConfirmPassword
     }
 
+    fun signUpWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            try {
+                _signupState.value = SignupState.Loading
+                val userId = userRepository.signInWithGoogle(idToken) // Uses the same method as login
+                if (userId != null) {
+                    _signupState.value = SignupState.Success(userId)
+                } else {
+                    _signupState.value = SignupState.Error("Google signup failed")
+                }
+            } catch (e: Exception) {
+                _signupState.value = SignupState.Error(e.message ?: "Google signup failed")
+            }
+        }
+    }
+
     fun signup() {
         if (password.value != confirmPassword.value) {
             _signupState.value = SignupState.Error("Passwords do not match")

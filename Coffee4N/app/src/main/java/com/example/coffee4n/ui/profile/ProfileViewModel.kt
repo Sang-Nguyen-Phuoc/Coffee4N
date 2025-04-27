@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+
 
 class ProfileViewModel(
     application: Application,
@@ -108,11 +110,33 @@ class ProfileViewModel(
     }
 
     fun logout(context: Context) {
-        firebaseAuth.signOut()
-        context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE).edit()
-            .remove("authToken")
-            .remove("userId")
-            .apply()
+        viewModelScope.launch {
+            try {
+                // Sign out from Firebase
+                firebaseAuth.signOut()
+
+                // Sign out from Google
+                val gso = com.google.android.gms.auth.api.signin.GoogleSignInOptions
+                    .Builder(com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN)
+                    .build()
+
+                val googleSignInClient = com.google.android.gms.auth.api.signin.GoogleSignIn
+                    .getClient(context, gso)
+
+                googleSignInClient.signOut().await()
+
+                // Clear local preferences
+                context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE).edit()
+                    .remove("authToken")
+                    .remove("userId")
+                    .apply()
+
+                // Clear repository cache if needed
+                userRepository.clearCache()
+            } catch (e: Exception) {
+                _error.value = "Logout failed: ${e.message}"
+            }
+        }
     }
 
     class Factory(
