@@ -1,12 +1,14 @@
 package com.example.coffee4n.ui.home
 
 import android.app.Application
-import android.util.Log
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.coffee4n.repository.ProductRepository
 import com.example.coffee4n.model.Product
+import com.example.coffee4n.model.CartItem
 import com.example.coffee4n.repository.CategoryRepository
+import com.example.coffee4n.repository.CartRepository
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +19,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val productRepository: ProductRepository
     private val categoryRepository: CategoryRepository
+    private val cartRepository: CartRepository
 
     private val _state = MutableStateFlow(HomeState(isLoading = true))
     val state: StateFlow<HomeState> = _state.asStateFlow()
@@ -25,6 +28,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val firebaseDatabase = FirebaseDatabase.getInstance()
         productRepository = ProductRepository(firebaseDatabase)
         categoryRepository = CategoryRepository(firebaseDatabase)
+        cartRepository = CartRepository(firebaseDatabase)
 
         loadProducts()
         loadCategories()
@@ -78,6 +82,56 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun addToCart(product: Product) {
+        viewModelScope.launch {
+            try {
+                val prefs = getApplication<Application>().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                val userId = prefs.getInt("userId", 0)
+
+                if (userId > 0) {
+                    // Check if product is in stock
+                    if (product.stockQuantity <= 0) {
+                        _state.update {
+                            it.copy(
+                                error = "Sorry, this product is out of stock",
+                                showSnackbar = true
+                            )
+                        }
+                        return@launch
+                    }
+
+                    // Create cart item with quantity 1
+                    val cartItem = CartItem(
+                        id = 0, // Will be auto-generated
+                        userId = userId,
+                        productId = product.id,
+                        quantity = 1
+                    )
+
+                    cartRepository.addToCart(userId, cartItem)
+
+                    _state.update {
+                        it.copy(
+                            showSnackbar = true,
+                            snackbarMessage = "${product.name} added to cart"
+                        )
+                    }
+                } else {
+                    _state.update {
+                        it.copy(showLoginDialog = true)
+                    }
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        error = "Failed to add to cart: ${e.message}",
+                        showSnackbar = true
+                    )
+                }
+            }
+        }
+    }
+
     fun updateSearchQuery(query: String) {
         _state.value = _state.value.copy(searchQuery = query)
     }
@@ -92,5 +146,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleBestSellers() {
         _state.value = _state.value.copy(showBestSellers = !_state.value.showBestSellers)
+    }
+
+    fun clearSnackbar() {
+        _state.update { it.copy(showSnackbar = false, snackbarMessage = null, error = null) }
+    }
+
+    fun dismissLoginDialog() {
+        _state.update { it.copy(showLoginDialog = false) }
     }
 }
