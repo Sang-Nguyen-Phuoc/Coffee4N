@@ -30,6 +30,9 @@
 
     <!-- Signup Screen -->
     <string name="create_account">Tạo tài khoản của bạn</string>
+    <string name="create_account_subtitle">Tham gia cùng chúng tôi để trải nghiệm dịch vụ cà phê tốt nhất</string>
+    <string name="please_fill_all_fields">Vui lòng điền đầy đủ thông tin</string>
+    <string name="terms_and_conditions">Tôi đồng ý với Điều khoản và Điều kiện</string>
     <string name="enter_username">Nhập tên người dùng</string>
     <string name="confirm_password">Xác nhận mật khẩu</string>
     <string name="agree_and_register">Đồng ý và Đăng ký</string>

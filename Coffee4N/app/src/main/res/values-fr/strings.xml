@@ -30,6 +30,9 @@
 
     <!-- Signup Screen -->
     <string name="create_account">Créez votre compte</string>
+    <string name="create_account_subtitle">Rejoignez-nous pour découvrir le meilleur service de café</string>
+    <string name="please_fill_all_fields">Veuillez remplir tous les champs</string>
+    <string name="terms_and_conditions">Jaccepte les Termes et Conditions</string>
     <string name="enter_username">Entrez votre nom d\'utilisateur</string>
     <string name="confirm_password">Confirmez votre mot de passe</string>
     <string name="agree_and_register">Accepter et s\'inscrire</string>

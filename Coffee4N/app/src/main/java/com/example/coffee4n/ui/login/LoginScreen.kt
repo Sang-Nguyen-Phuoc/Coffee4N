@@ -2,35 +2,27 @@ package com.example.coffee4n.ui.login
 
 import android.app.Activity
 import android.content.Context
-import android.widget.Space
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.Store
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -40,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -66,7 +58,7 @@ fun LoginScreen(navController: NavController) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Khởi tạo ViewModel với dependencies
+    // Initialize ViewModel
     val firebaseAuth = FirebaseAuth.getInstance()
     val firebaseDatabase = FirebaseDatabase.getInstance()
     val viewModel: LoginViewModel = viewModel(
@@ -77,7 +69,7 @@ fun LoginScreen(navController: NavController) {
         }
     )
 
-    // Lấy trạng thái từ ViewModel
+    // State from ViewModel
     val email = viewModel.email.collectAsState()
     val password = viewModel.password.collectAsState()
     val loginState = viewModel.loginState.collectAsState()
@@ -85,9 +77,9 @@ fun LoginScreen(navController: NavController) {
     val isOwnerLogging by viewModel.isOwnerLogging.collectAsState()
     val passcode by viewModel.passcode.collectAsState()
 
-    // Password visibility toggle
     var passwordVisible by remember { mutableStateOf(false) }
 
+    // Google Sign In
     val googleSignInClient = remember {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(context.getString(R.string.default_web_client_id))
@@ -108,13 +100,13 @@ fun LoginScreen(navController: NavController) {
         } catch (e: ApiException) {
             scope.launch {
                 snackbarHostState.showSnackbar(
-                    message = R.string.google_sign_in_failed.toString()
+                    message = context.getString(R.string.google_sign_in_failed)
                 )
             }
         }
     }
 
-    // Xử lý hiệu ứng phụ từ loginState
+    // Handle login state
     LaunchedEffect(loginState.value) {
         when (val state = loginState.value) {
             is LoginState.Success -> {
@@ -127,11 +119,10 @@ fun LoginScreen(navController: NavController) {
                     navController.navigate(Destinations.OWNER_DASHBOARD) {
                         popUpTo(Destinations.WELCOME) { inclusive = true }
                     }
-                }
-                else {
+                } else {
                     with(prefs.edit()) {
                         putInt("userId", state.userId)
-                        putString("authToken", state.authToken) // Save the auth token
+                        putString("authToken", state.authToken)
                         apply()
                     }
                     navController.navigate(Destinations.HOME) {
@@ -141,314 +132,516 @@ fun LoginScreen(navController: NavController) {
                 viewModel.resetLoginState()
             }
             is LoginState.Error -> {
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                    snackbarHostState.showSnackbar(
-                        message = state.message,
-                        duration = SnackbarDuration.Short
-                    )
-                }
+                snackbarHostState.showSnackbar(
+                    message = state.message,
+                    duration = SnackbarDuration.Short
+                )
             }
             else -> {}
         }
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.White)
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFFAF3E0),
+                        Color.White
+                    )
+                )
+            )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp, 70.dp, 24.dp, 24.dp)
+                .verticalScroll(rememberScrollState())
         ) {
-            // Language selector at the top right
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+            // Top Header with Language Selector
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(239, 83, 80))
+                    .padding(16.dp)
             ) {
-                LanguageSelector(
-                    onLanguageSelected = {
-                        // Restart the activity to apply language changes
-                        (context as? androidx.activity.ComponentActivity)?.recreate()
-                    }
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(PaddingValues(top = 24.dp)),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Coffee4N",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    LanguageSelector(
+                        onLanguageSelected = {
+                            (context as? androidx.activity.ComponentActivity)?.recreate()
+                        }
+                    )
+                }
             }
 
-            OwnerCard(
-                owner = owner ?: Owner(),
-                onChangeStore = {
-                    prefs.edit().remove("ownerId").apply()
-                    navController.navigate(Destinations.WELCOME)
-                }
-            )
-
-            Column (
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxHeight()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    stringResource(R.string.welcome_message),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                // Owner Card
+                EnhancedOwnerCard(
+                    owner = owner ?: Owner(),
+                    onChangeStore = {
+                        prefs.edit().remove("ownerId").apply()
+                        navController.navigate(Destinations.WELCOME)
+                    }
                 )
-                Spacer(modifier = Modifier.height(22.dp))
-                TextField(
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Welcome Text
+                Text(
+                    text = stringResource(R.string.welcome_message),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(239, 83, 80),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(40.dp))
+
+                // Email Input
+                EnhancedTextField(
                     value = email.value,
                     onValueChange = viewModel::onEmailChange,
-                    label = { Text(stringResource(R.string.enter_email), color = Color.Gray) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFF5F5F5)),
-                    colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedContainerColor = Color(0xFFF5F5F5),
-                        unfocusedContainerColor = Color(0xFFF5F5F5)
-                    ),
-                    textStyle = TextStyle(fontSize = 20.sp)
+                    label = stringResource(R.string.enter_email),
+                    leadingIcon = Icons.Default.Email,
+                    keyboardType = KeyboardType.Email
                 )
+
                 Spacer(modifier = Modifier.height(16.dp))
-                TextField(
+
+                // Password Input
+                EnhancedTextField(
                     value = password.value,
                     onValueChange = viewModel::onPasswordChange,
-                    label = { Text(stringResource(R.string.enter_password), color = Color.Gray) },
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = stringResource(R.string.toggle_password_visibility),
-                                tint = Color.Gray
-                            )
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFF5F5F5)),
-                    colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedContainerColor = Color(0xFFF5F5F5),
-                        unfocusedContainerColor = Color(0xFFF5F5F5)
-                    ),
-                    textStyle = TextStyle(fontSize = 20.sp)
+                    label = stringResource(R.string.enter_password),
+                    leadingIcon = Icons.Default.Lock,
+                    keyboardType = KeyboardType.Password,
+                    isPassword = true,
+                    passwordVisible = passwordVisible,
+                    onPasswordVisibilityToggle = { passwordVisible = !passwordVisible }
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                TextButton(
-                    onClick = { /* Navigate to Forgot Password screen if implemented */ },
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text(stringResource(R.string.forgot_password), color = Color.DarkGray)
-                }
+
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(
+
+                // Forgot Password
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = { /* Navigate to Forgot Password */ }) {
+                        Text(
+                            text = stringResource(R.string.forgot_password),
+                            color = Color(239, 83, 80),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Login Button
+                EnhancedButton(
                     onClick = {
                         if (email.value.isBlank() || password.value.isBlank()) {
                             scope.launch {
-                                snackbarHostState.showSnackbar(message = R.string.please_enter_credentials.toString())
+                                snackbarHostState.showSnackbar(
+                                    message = context.getString(R.string.please_enter_credentials)
+                                )
                             }
                         } else {
                             viewModel.login()
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
-                    enabled = loginState.value !is LoginState.Loading
+                    text = stringResource(R.string.login),
+                    isLoading = loginState.value is LoginState.Loading,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Social Login Section
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (loginState.value is LoginState.Loading) {
-                        CircularProgressIndicator(color = Color.White)
-                    } else {
-                        Text(stringResource(R.string.login), color = Color.White)
-                    }
+                    Divider(modifier = Modifier.weight(1f), color = Color.LightGray)
+                    Text(
+                        text = stringResource(R.string.or_login_with),
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                    Divider(modifier = Modifier.weight(1f), color = Color.LightGray)
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Google Sign In Button
+                SocialLoginButton(
+                    onClick = {
+                        val signInIntent = googleSignInClient.signInIntent
+                        googleSignInLauncher.launch(signInIntent)
+                    },
+                    icon = R.drawable.ic_google_png,
+                    text = "Continue with Google"
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Guest Login
+                TextButton(
+                    onClick = { navController.navigate(Destinations.HOME) }
+                ) {
+                    Text(
+                        text = stringResource(R.string.continue_as_guest),
+                        color = Color.Gray,
+                        fontSize = 16.sp
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = stringResource(R.string.or_login_with),
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                    color = Color.Gray
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+
+                // Sign Up Link
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = {
-                        val signInIntent = googleSignInClient.signInIntent
-                        googleSignInLauncher.launch(signInIntent)
-                    }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_google_png),
-                            contentDescription = "Google Login",
-                            modifier = Modifier.size(40.dp)
+                    Text(
+                        text = stringResource(R.string.no_account),
+                        color = Color.Gray
+                    )
+                    TextButton(
+                        onClick = { navController.navigate(Destinations.SIGNUP) }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.register_now),
+                            color = Color(239, 83, 80),
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-
-                TextButton(
-                    onClick = { navController.navigate(Destinations.HOME) },
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    Text(
-                        stringResource(R.string.continue_as_guest),
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
-                }
-
-                TextButton(
-                    onClick = { navController.navigate(Destinations.SIGNUP) },
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    Text(
-                        stringResource(R.string.no_account),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(stringResource(R.string.register_now),
-                        color = MaterialTheme.colorScheme.tertiary)
-                }
             }
         }
+
+        // Snackbar Host
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 16.dp)
         )
+
+        // Owner Verification Dialog
         if (isOwnerLogging) {
-            AlertDialog(
-                onDismissRequest = { viewModel.onDissmiss() },
-                title = {
-                    Text(
-                        text = stringResource(R.string.verify_owner),
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF313131)
+            EnhancedOwnerVerificationDialog(
+                passcode = passcode,
+                onPasscodeChange = viewModel::onPasscodeChange,
+                onVerify = viewModel::verifyOwner,
+                onDismiss = viewModel::onDissmiss
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EnhancedTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    leadingIcon: ImageVector,
+    modifier: Modifier = Modifier,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    isPassword: Boolean = false,
+    passwordVisible: Boolean = false,
+    onPasswordVisibilityToggle: (() -> Unit)? = null
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        leadingIcon = {
+            Icon(
+                imageVector = leadingIcon,
+                contentDescription = null,
+                tint = Color(239, 83, 80)
+            )
+        },
+        trailingIcon = if (isPassword) {
+            {
+                IconButton(onClick = { onPasswordVisibilityToggle?.invoke() }) {
+                    Icon(
+                        imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = "Toggle password visibility",
+                        tint = Color.Gray
                     )
-                },
-                text = {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(stringResource(R.string.verify_owner_message))
-                        OutlinedTextField(
-                            value = passcode,
-                            onValueChange = { viewModel.onPasscodeChange(it) },
-                            label = { Text(stringResource(R.string.passcode)) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF5A9280),
-                                focusedLabelColor = Color(0xFF5A9280),
-                                cursorColor = Color(0xFF5A9280)
-                            )
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            viewModel.verifyOwner()
-                        },
-                        enabled = passcode.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5A9280)),
-                        shape = RoundedCornerShape(8.dp),
-                    ) {
-                        Text(stringResource(R.string.verify), color = Color.White)
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = { viewModel.onDissmiss() },
-                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF6D6D6D))
-                    ) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                },
-                containerColor = Color.White
+                }
+            }
+        } else null,
+        visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(239, 83, 80),
+            unfocusedBorderColor = Color.LightGray,
+            focusedLabelColor = Color(239, 83, 80),
+            unfocusedLabelColor = Color.Gray
+        )
+    )
+}
+
+@Composable
+fun EnhancedButton(
+    onClick: () -> Unit,
+    text: String,
+    isLoading: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .height(56.dp)
+            .shadow(8.dp, RoundedCornerShape(28.dp)),
+        shape = RoundedCornerShape(28.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(239, 83, 80),
+            disabledContainerColor = Color.LightGray
+        ),
+        enabled = !isLoading
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                color = Color.White,
+                modifier = Modifier.size(24.dp),
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text(
+                text = text,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
             )
         }
     }
 }
 
 @Composable
-fun OwnerCard(
+fun SocialLoginButton(
+    onClick: () -> Unit,
+    icon: Int,
+    text: String
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        shape = RoundedCornerShape(28.dp),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = Color.Black
+        ),
+        border = BorderStroke(1.dp, Color.LightGray)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = painterResource(id = icon),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = text,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+@Composable
+fun EnhancedOwnerCard(
     owner: Owner,
-    onChangeStore: () -> Unit,
+    onChangeStore: () -> Unit
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFD8E2DC)),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp, 16.dp, 16.dp, 0.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
         ) {
-            AsyncImage(
-                model = owner.avatarUrl,
-                contentDescription = "${owner.shopName} avatar",
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(Color.LightGray),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = owner.shopName,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 22.sp
-                    ),
-                    color = Color(0xFF5A9280)
+                AsyncImage(
+                    model = owner.avatarUrl,
+                    contentDescription = "${owner.shopName} avatar",
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(Color.LightGray),
+                    contentScale = ContentScale.Crop
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = owner.shopAddress,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontSize = 14.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
 
-        Spacer(Modifier.height(2.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            TextButton(
-                onClick = onChangeStore
-            ) {
-                Row {
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        stringResource(R.string.visit_another_store),
+                        text = owner.shopName,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
-                    Spacer(Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Icons.Default.Store,
-                        contentDescription = "Change store",
-                        tint = Color.Black
+                    Text(
+                        text = owner.shopAddress,
+                        fontSize = 14.sp,
+                        color = Color.Gray
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = onChangeStore,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(239, 83, 80)
+                ),
+                border = BorderStroke(1.dp, Color(239, 83, 80))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Store,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.visit_another_store))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EnhancedOwnerVerificationDialog(
+    passcode: String,
+    onPasscodeChange: (String) -> Unit,
+    onVerify: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = Modifier.clip(RoundedCornerShape(24.dp))
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White,
+            tonalElevation = 8.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Security,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = Color(239, 83, 80)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.verify_owner),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = stringResource(R.string.verify_owner_message),
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                OutlinedTextField(
+                    value = passcode,
+                    onValueChange = onPasscodeChange,
+                    label = { Text(stringResource(R.string.passcode)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(239, 83, 80),
+                        focusedLabelColor = Color(239, 83, 80),
+                        cursorColor = Color(239, 83, 80)
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color.Gray
+                        )
+                    ) {
+                        Text(stringResource(R.string.cancel))
+                    }
+
+                    Button(
+                        onClick = onVerify,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        enabled = passcode.isNotBlank(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(239, 83, 80),
+                            disabledContainerColor = Color.LightGray
+                        )
+                    ) {
+                        Text(stringResource(R.string.verify))
+                    }
                 }
             }
         }
