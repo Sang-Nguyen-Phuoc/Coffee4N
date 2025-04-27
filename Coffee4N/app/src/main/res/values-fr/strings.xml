@@ -6,6 +6,10 @@
     <string name="choose_store">Choisir un magasin</string>
     <string name="no_stores_available">Aucun magasin disponible</string>
     <string name="visit_another_store">Visiter un autre magasin</string>
+    <string name="welcome_message_subtitle">Découvrez vos cafés préférés</string>
+    <string name="open_now">Ouvert maintenant</string>
+    <string name="loading_stores">Chargement des magasins...</string>
+    <string name="no_stores_message">Veuillez revenir plus tard ou contacter le support</string>
 
     <!-- Login Screen -->
     <string name="welcome_message">Bienvenue! Ravi de vous voir!</string>
@@ -30,6 +34,9 @@
 
     <!-- Signup Screen -->
     <string name="create_account">Créez votre compte</string>
+    <string name="create_account_subtitle">Rejoignez-nous pour découvrir le meilleur service de café</string>
+    <string name="please_fill_all_fields">Veuillez remplir tous les champs</string>
+    <string name="terms_and_conditions">Jaccepte les Termes et Conditions</string>
     <string name="enter_username">Entrez votre nom d\'utilisateur</string>
     <string name="confirm_password">Confirmez votre mot de passe</string>
     <string name="agree_and_register">Accepter et s\'inscrire</string>

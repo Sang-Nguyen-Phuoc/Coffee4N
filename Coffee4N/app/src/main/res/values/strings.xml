@@ -6,6 +6,10 @@
     <string name="choose_store">Choose Store</string>
     <string name="no_stores_available">No stores available</string>
     <string name="visit_another_store">Visit another store</string>
+    <string name="welcome_message_subtitle">Discover your favorite coffee spots</string>
+    <string name="open_now">Open Now</string>
+    <string name="loading_stores">Loading stores...</string>
+    <string name="no_stores_message">Please check back later or contact support</string>
 
     <!-- Login Screen -->
     <string name="welcome_message">Welcome! Glad to see you!</string>
@@ -30,6 +34,9 @@
 
     <!-- Signup Screen -->
     <string name="create_account">Create your account</string>
+    <string name="create_account_subtitle">Join us to experience the best coffee service</string>
+    <string name="please_fill_all_fields">Please fill in all fields</string>
+    <string name="terms_and_conditions">I agree to the Terms and Conditions</string>
     <string name="enter_username">Enter your username</string>
     <string name="confirm_password">Confirm your password</string>
     <string name="agree_and_register">Agree and Register</string>
