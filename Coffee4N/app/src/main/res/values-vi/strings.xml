@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Coffee4N</string>
+
+    <!-- Welcome Screen -->
+    <string name="choose_store">Chọn Cửa Hàng</string>
+    <string name="no_stores_available">Không có cửa hàng nào</string>
+    <string name="visit_another_store">Ghé cửa hàng khác</string>
+
+    <!-- Login Screen -->
+    <string name="welcome_message">Chào mừng! Rất vui được gặp bạn!</string>
+    <string name="enter_email">Nhập email của bạn</string>
+    <string name="enter_password">Nhập mật khẩu của bạn</string>
+    <string name="forgot_password">Quên mật khẩu?</string>
+    <string name="login">Đăng nhập</string>
+    <string name="or_login_with">Hoặc đăng nhập bằng</string>
+    <string name="continue_as_guest">Tiếp tục với tư cách khách</string>
+    <string name="no_account">Chưa có tài khoản? </string>
+    <string name="register_now">Đăng ký ngay</string>
+    <string name="verify_owner">Xác thực chủ sở hữu</string>
+    <string name="verify_owner_message">Vui lòng nhập mã xác thực để xác nhận bạn là chủ sở hữu.</string>
+    <string name="passcode">Mã xác thực</string>
+    <string name="verify">Xác nhận</string>
+    <string name="cancel">Hủy</string>
+    <string name="invalid_passcode">Mã xác thực không đúng</string>
+    <string name="invalid_credentials">Email hoặc mật khẩu không đúng</string>
+    <string name="please_enter_credentials">Vui lòng nhập email và mật khẩu</string>
+    <string name="google_sign_in_failed">Đăng nhập Google thất bại: %1$s</string>
+    <string name="toggle_password_visibility">Hiển thị mật khẩu</string>
+
+    <!-- Signup Screen -->
+    <string name="create_account">Tạo tài khoản của bạn</string>
+    <string name="enter_username">Nhập tên người dùng</string>
+    <string name="confirm_password">Xác nhận mật khẩu</string>
+    <string name="agree_and_register">Đồng ý và Đăng ký</string>
+    <string name="or_signup_with">Hoặc đăng ký bằng</string>
+    <string name="already_have_account">Đã có tài khoản? </string>
+    <string name="login_now">Đăng nhập ngay</string>
+    <string name="account_created_success">Tạo tài khoản thành công! Vui lòng đăng nhập.</string>
+    <string name="passwords_do_not_match">Mật khẩu không khớp</string>
+    <string name="signup_failed">Đăng ký thất bại</string>
+    <string name="back">Quay lại</string>
+    <string name="toggle_confirm_password_visibility">Hiển thị mật khẩu xác nhận</string>
+    <string name="google_signup_failed">Đăng ký Google thất bại: %1$s</string>
+
+    <!-- Common -->
+    <string name="loading">Đang tải…</string>
+    <string name="error">Lỗi</string>
+    <string name="close">Đóng</string>
+</resources>
