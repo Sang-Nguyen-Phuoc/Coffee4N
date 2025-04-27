@@ -8,6 +8,7 @@ data class OwnerOrderState(
     val orders: List<Order> = emptyList(),
     val filteredOrders: List<Order> = emptyList(),
     val filterStatus: String? = null,
+    val orderSearchQuery: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
     val successMessage: String? = null,
@@ -19,15 +20,18 @@ data class OwnerOrderState(
     val selectedTab: Int = 0,
     val promotions: List<Promotion> = emptyList(),
     val filteredPromotions: List<Promotion> = emptyList(),
-    val searchQuery: String = "",
+    val promotionSearchQuery: String = "",
     val isLoadingPromotions: Boolean = false,
     val promotionError: String? = null,
     val promotionSuccessMessage: String? = null,
     val deletingPromotionId: Int? = null,
     val showAddPromotionDialog: Boolean = false,
+    val isAddingPromotion: Boolean = false, // Thêm trạng thái mới
     val currentOrderPage: Int = 1,
     val orderPageSize: Int = 10,
-    val hasMoreOrders: Boolean = true
+    val hasMoreOrders: Boolean = true,
+    val selectedPromotionId: Int? = null,
+    val isUpdatingPromotion: Boolean = false
 )
 
 data class OrderItemWithName(

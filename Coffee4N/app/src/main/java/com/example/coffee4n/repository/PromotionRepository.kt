@@ -1,18 +1,24 @@
 package com.example.coffee4n.repository
 
-import com.google.firebase.database.DataSnapshot import com.google.firebase.database.FirebaseDatabase import com.example.coffee4n.model.Promotion
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.FirebaseDatabase
+import com.example.coffee4n.model.Promotion
 import com.example.coffee4n.session.LastIds
 import com.example.coffee4n.session.Models
 import com.example.coffee4n.session.OwnerSession
-import kotlinx.coroutines.channels.awaitClose import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.callbackFlow import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 
-class PromotionRepository( private val firebaseDatabase: FirebaseDatabase ) {
+class PromotionRepository(private val firebaseDatabase: FirebaseDatabase) {
     private val promotionRef = firebaseDatabase.getReference(OwnerSession.getReferencePath(model = Models.Promotion))
-    
+
     suspend fun getPromotionById(id: Int): Promotion? {
-        val snapshot = promotionRef.get().await();
-        return snapshot.children.mapNotNull { parsePromotion(it) }.firstOrNull { it.id == id } 
+        val snapshot = promotionRef.get().await()
+        return snapshot.children.mapNotNull { parsePromotion(it) }.firstOrNull { it.id == id }
     }
+
     suspend fun getPromotionByCode(code: String): Promotion? {
         val snapshot = promotionRef.get().await()
         return snapshot.children.mapNotNull { parsePromotion(it) }.firstOrNull { it.code == code }
@@ -37,9 +43,23 @@ class PromotionRepository( private val firebaseDatabase: FirebaseDatabase ) {
     suspend fun deletePromotion(id: Int) {
         val promotionsRef = promotionRef
         val snapshot = promotionsRef.get().await()
-        val index = snapshot.children.mapNotNull { parsePromotion(it) }.indexOfFirst { it.id == id }
-        if (index != -1) {
-            promotionsRef.child(index.toString()).removeValue().await()
+
+        // Find the push key of the promotion with the given id
+        val targetPromotionSnapshot = snapshot.children.firstOrNull { child ->
+            val promotion = parsePromotion(child)
+            promotion?.id == id
+        }
+
+        // If the promotion is found, delete it using its push key
+        if (targetPromotionSnapshot != null) {
+            val pushKey = targetPromotionSnapshot.key
+            if (pushKey != null) {
+                promotionsRef.child(pushKey).removeValue().await()
+            } else {
+                throw Exception("Promotion with ID $id not found")
+            }
+        } else {
+            throw Exception("Promotion with ID $id not found")
         }
     }
 

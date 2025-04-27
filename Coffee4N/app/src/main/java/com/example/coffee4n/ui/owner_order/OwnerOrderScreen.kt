@@ -16,6 +16,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,20 +43,15 @@ import com.example.coffee4n.repository.OrderRepository
 import com.example.coffee4n.repository.ProductRepository
 import com.example.coffee4n.repository.PromotionRepository
 import com.example.coffee4n.repository.UserRepository
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.ui.res.painterResource
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarToday
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -174,11 +173,29 @@ fun OwnerOrderScreen(navController: NavController) {
                 }
             )
         }
+
+        state.selectedPromotionId?.let { promotionId ->
+            val promotion = state.filteredPromotions.find { it.id == promotionId }
+            promotion?.let {
+                EditPromotionDialog(
+                    promotion = it,
+                    onDismiss = { viewModel.hideEditPromotionDialog() },
+                    onUpdatePromotion = { updatedPromotion ->
+                        viewModel.updatePromotion(updatedPromotion)
+                    }
+                )
+            }
+        }
     }
 }
 
 @Composable
 fun OrderContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
+    val listState = rememberLazyListState()
+    val swipeRefreshState = rememberSwipeRefreshState(
+        isRefreshing = state.isLoading && state.currentOrderPage == 1
+    )
+
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -187,46 +204,24 @@ fun OrderContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected = state.filterStatus == null,
-                    onClick = { viewModel.setFilterStatus(null) },
-                    label = { Text("All") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFFC67C4E),
-                        selectedLabelColor = Color.White,
-                        containerColor = Color(0xFFFFFFFF),
-                        labelColor = Color(0xFF313131)
-                    ),
-                    border = BorderStroke(1.dp, if (state.filterStatus == null) Color(0xFFC67C4E) else Color(0xFFB0BEC5))
+            OutlinedTextField(
+                value = state.orderSearchQuery,
+                onValueChange = { viewModel.setOrderSearchQuery(it) },
+                label = { Text("Search by Order ID") },
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color(0xFFC67C4E),
+                    unfocusedIndicatorColor = Color(0xFFB0BEC5),
+                    focusedLabelColor = Color(0xFFC67C4E),
+                    cursorColor = Color(0xFFC67C4E)
                 )
-                FilterChip(
-                    selected = state.filterStatus == "PENDING",
-                    onClick = { viewModel.setFilterStatus("PENDING") },
-                    label = { Text("Pending") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFFC67C4E),
-                        selectedLabelColor = Color.White,
-                        containerColor = Color(0xFFFFFFFF),
-                        labelColor = Color(0xFF313131)
-                    ),
-                    border = BorderStroke(1.dp, if (state.filterStatus == "PENDING") Color(0xFFC67C4E) else Color(0xFFB0BEC5))
-                )
-                FilterChip(
-                    selected = state.filterStatus == "COMPLETE",
-                    onClick = { viewModel.setFilterStatus("COMPLETE") },
-                    label = { Text("Complete") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFFC67C4E),
-                        selectedLabelColor = Color.White,
-                        containerColor = Color(0xFFFFFFFF),
-                        labelColor = Color(0xFF313131)
-                    ),
-                    border = BorderStroke(1.dp, if (state.filterStatus == "COMPLETE") Color(0xFFC67C4E) else Color(0xFFB0BEC5))
-                )
-            }
+            )
             OutlinedButton(
                 onClick = { viewModel.resetFilter() },
                 modifier = Modifier.height(36.dp),
@@ -239,203 +234,258 @@ fun OrderContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
                 Text("Reset", fontSize = 14.sp)
             }
         }
-
-        AnimatedVisibility(
-            visible = state.isLoading && state.currentOrderPage == 1,
-            enter = fadeIn(),
-            exit = fadeOut()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Card(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .shadow(6.dp, RoundedCornerShape(16.dp)),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .background(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color(0xFFFFFFFF),
-                                        Color(0xFFF9F2ED)
-                                    )
-                                )
-                            ),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CircularProgressIndicator(
-                            color = Color(0xFFC67C4E),
-                            strokeWidth = 4.dp,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Loading orders...",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF8D7A55)
-                        )
-                    }
-                }
-            }
+            FilterChip(
+                selected = state.filterStatus == null,
+                onClick = { viewModel.setFilterStatus(null) },
+                label = { Text("All") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0xFFC67C4E),
+                    selectedLabelColor = Color.White,
+                    containerColor = Color(0xFFFFFFFF),
+                    labelColor = Color(0xFF313131)
+                ),
+                border = BorderStroke(1.dp, if (state.filterStatus == null) Color(0xFFC67C4E) else Color(0xFFB0BEC5))
+            )
+            FilterChip(
+                selected = state.filterStatus == "PENDING",
+                onClick = { viewModel.setFilterStatus("PENDING") },
+                label = { Text("Pending") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0xFFC67C4E),
+                    selectedLabelColor = Color.White,
+                    containerColor = Color(0xFFFFFFFF),
+                    labelColor = Color(0xFF313131)
+                ),
+                border = BorderStroke(1.dp, if (state.filterStatus == "PENDING") Color(0xFFC67C4E) else Color(0xFFB0BEC5))
+            )
+            FilterChip(
+                selected = state.filterStatus == "COMPLETE",
+                onClick = { viewModel.setFilterStatus("COMPLETE") },
+                label = { Text("Complete") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0xFFC67C4E),
+                    selectedLabelColor = Color.White,
+                    containerColor = Color(0xFFFFFFFF),
+                    labelColor = Color(0xFF313131)
+                ),
+                border = BorderStroke(1.dp, if (state.filterStatus == "COMPLETE") Color(0xFFC67C4E) else Color(0xFFB0BEC5))
+            )
         }
 
-        AnimatedVisibility(
-            visible = !state.isLoading && state.error != null,
-            enter = fadeIn(),
-            exit = fadeOut()
+        SwipeRefresh(
+            state = swipeRefreshState,
+            onRefresh = { viewModel.refreshOrders() }
         ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Card(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .shadow(6.dp, RoundedCornerShape(16.dp)),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                this@Column.AnimatedVisibility(
+                    visible = state.isLoading && state.currentOrderPage == 1,
+                    enter = fadeIn(),
+                    exit = fadeOut()
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .background(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color(0xFFFFFFFF),
-                                        Color(0xFFF9F2ED)
-                                    )
-                                )
-                            ),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = state.error ?: "An error occurred",
-                            color = Color(0xFFE57373),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-        }
-
-        AnimatedVisibility(
-            visible = !state.isLoading && state.error == null,
-            enter = slideInVertically(initialOffsetY = { 200 }) + fadeIn(),
-            exit = fadeOut()
-        ) {
-            if (state.filteredOrders.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Card(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .shadow(6.dp, RoundedCornerShape(16.dp)),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
-                    ) {
-                        Column(
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Card(
                             modifier = Modifier
                                 .padding(16.dp)
-                                .background(
-                                    brush = Brush.verticalGradient(
-                                        colors = listOf(
-                                            Color(0xFFFFFFFF),
-                                            Color(0xFFF9F2ED)
-                                        )
-                                    )
-                                ),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                                .shadow(6.dp, RoundedCornerShape(16.dp)),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
                         ) {
-                            Text(
-                                text = "No orders found",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF8D7A55)
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .background(
+                                        brush = Brush.verticalGradient(
+                                            colors = listOf(
+                                                Color(0xFFFFFFFF),
+                                                Color(0xFFF9F2ED)
+                                            )
+                                        )
+                                    ),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                CircularProgressIndicator(
+                                    color = Color(0xFFC67C4E),
+                                    strokeWidth = 4.dp,
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Loading orders...",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF8D7A55)
+                                )
+                            }
                         }
                     }
                 }
-            } else {
-                val listState = rememberLazyListState()
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(state.filteredOrders) { order ->
-                        OrderCard(
-                            order = order,
-                            isUpdating = state.updatingOrderId == order.id,
-                            onMarkComplete = { viewModel.markOrderComplete(order.id) },
-                            onClick = { viewModel.showOrderDetails(order.id) }
-                        )
-                    }
 
-                    if (state.hasMoreOrders && state.isLoading) {
-                        item {
-                            AnimatedVisibility(
-                                visible = true,
-                                enter = fadeIn(),
-                                exit = fadeOut()
+                this@Column.AnimatedVisibility(
+                    visible = !state.isLoading && state.error != null,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Card(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .shadow(6.dp, RoundedCornerShape(16.dp)),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .background(
+                                        brush = Brush.verticalGradient(
+                                            colors = listOf(
+                                                Color(0xFFFFFFFF),
+                                                Color(0xFFF9F2ED)
+                                            )
+                                        )
+                                    ),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Card(
+                                Text(
+                                    text = state.error ?: "An error occurred",
+                                    color = Color(0xFFE57373),
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+
+                this@Column.AnimatedVisibility(
+                    visible = !state.isLoading && state.error == null,
+                    enter = slideInVertically(initialOffsetY = { 200 }) + fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    if (state.filteredOrders.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Card(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .shadow(6.dp, RoundedCornerShape(16.dp)),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White)
+                            ) {
+                                Column(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 16.dp, horizontal = 16.dp)
-                                        .shadow(4.dp, RoundedCornerShape(12.dp)),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .padding(16.dp)
-                                            .background(
-                                                brush = Brush.verticalGradient(
-                                                    colors = listOf(
-                                                        Color(0xFFFFFFFF),
-                                                        Color(0xFFF9F2ED)
-                                                    )
+                                        .padding(16.dp)
+                                        .background(
+                                            brush = Brush.verticalGradient(
+                                                colors = listOf(
+                                                    Color(0xFFFFFFFF),
+                                                    Color(0xFFF9F2ED)
                                                 )
-                                            ),
-                                        horizontalAlignment = Alignment.CenterHorizontally
+                                            )
+                                        ),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "No orders found",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF8D7A55)
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp)
+                        ) {
+                            items(
+                                items = state.filteredOrders,
+                                key = { order -> order.id }
+                            ) { order ->
+                                OrderCard(
+                                    order = order,
+                                    isUpdating = state.updatingOrderId == order.id,
+                                    onMarkComplete = { viewModel.markOrderComplete(order.id) },
+                                    onClick = { viewModel.showOrderDetails(order.id) }
+                                )
+                            }
+
+                            if (state.hasMoreOrders) {
+                                item(key = "loading_indicator") {
+                                    this@Column.AnimatedVisibility(
+                                        visible = state.isLoading,
+                                        enter = fadeIn(),
+                                        exit = fadeOut()
                                     ) {
-                                        CircularProgressIndicator(
-                                            color = Color(0xFFC67C4E),
-                                            strokeWidth = 4.dp,
-                                            modifier = Modifier.size(36.dp)
-                                        )
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            text = "Loading more orders...",
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = Color(0xFF8D7A55)
-                                        )
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 16.dp, horizontal = 16.dp)
+                                                .shadow(4.dp, RoundedCornerShape(12.dp)),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                                        ) {
+                                            Column(
+                                                modifier = Modifier
+                                                    .padding(16.dp)
+                                                    .background(
+                                                        brush = Brush.verticalGradient(
+                                                            colors = listOf(
+                                                                Color(0xFFFFFFFF),
+                                                                Color(0xFFF9F2ED)
+                                                            )
+                                                        )
+                                                    ),
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    color = Color(0xFFC67C4E),
+                                                    strokeWidth = 4.dp,
+                                                    modifier = Modifier.size(36.dp)
+                                                )
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                Text(
+                                                    text = "Loading more orders...",
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = Color(0xFF8D7A55)
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                }
 
-                LaunchedEffect(listState) {
-                    snapshotFlow { listState.layoutInfo.visibleItemsInfo }
-                        .collect { visibleItems ->
-                            val lastVisibleItem = visibleItems.lastOrNull()
-                            if (lastVisibleItem != null &&
-                                lastVisibleItem.index >= state.filteredOrders.size - 1 &&
-                                state.hasMoreOrders &&
-                                !state.isLoading
-                            ) {
-                                viewModel.loadMoreOrders()
-                            }
+                        LaunchedEffect(listState) {
+                            snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+                                .debounce(300)
+                                .distinctUntilChanged()
+                                .collectLatest { visibleItems ->
+                                    val lastVisibleItem = visibleItems.lastOrNull()
+                                    if (lastVisibleItem != null &&
+                                        lastVisibleItem.index >= state.filteredOrders.size - 3 &&
+                                        state.hasMoreOrders &&
+                                        !state.isLoading
+                                    ) {
+                                        viewModel.loadMoreOrders()
+                                    }
+                                }
                         }
+                    }
                 }
             }
         }
@@ -450,11 +500,11 @@ fun PromotionContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             OutlinedTextField(
-                value = state.searchQuery,
-                onValueChange = { viewModel.setSearchQuery(it) },
+                value = state.promotionSearchQuery,
+                onValueChange = { viewModel.setPromotionSearchQuery(it) },
                 label = { Text("Search by Code") },
                 modifier = Modifier
                     .weight(1f)
@@ -524,9 +574,7 @@ fun PromotionContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
         ) {
             if (state.filteredPromotions.isEmpty()) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -539,11 +587,16 @@ fun PromotionContent(viewModel: OwnerOrderViewModel, state: OwnerOrderState) {
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(state.filteredPromotions) { promotion ->
+                    items(
+                        items = state.filteredPromotions,
+                        key = { promotion -> promotion.id }
+                    ) { promotion ->
                         PromotionCard(
                             promotion = promotion,
+                            onEdit = { viewModel.showEditPromotionDialog(promotion.id) },
                             onDelete = { viewModel.deletePromotion(promotion.id) },
                             isDeleting = state.deletingPromotionId == promotion.id
                         )
@@ -776,7 +829,10 @@ fun OrderDetailDialog(
                                     .heightIn(max = 200.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                items(orderItems) { item ->
+                                items(
+                                    items = orderItems,
+                                    key = { item -> "${item.orderId}_${item.productId}" }
+                                ) { item ->
                                     OrderItemRow(item)
                                 }
                             }
@@ -839,6 +895,7 @@ fun OrderItemRow(item: OrderItemWithName) {
 @Composable
 fun PromotionCard(
     promotion: Promotion,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
     isDeleting: Boolean
 ) {
@@ -870,7 +927,8 @@ fun PromotionCard(
                     text = "Code: ${promotion.code}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF313131)
+                    color = Color(0xFF313131),
+                    modifier = Modifier.clickable { onEdit() }
                 )
                 Text(
                     text = if (promotion.isValid()) "Active" else "Expired",
@@ -908,32 +966,56 @@ fun PromotionCard(
                 color = Color(0xFF8D7A55)
             )
             Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = onDelete,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .shadow(4.dp, RoundedCornerShape(12.dp)),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE57373),
-                    disabledContainerColor = Color(0xFFB0BEC5)
-                ),
-                enabled = !isDeleting
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                if (isDeleting) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp
+                Button(
+                    onClick = onEdit,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .padding(end = 8.dp)
+                        .shadow(4.dp, RoundedCornerShape(12.dp)),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF808080) // Gray color for Edit button
                     )
-                } else {
-                    Text(
-                        text = "Delete",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Promotion",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
                     )
+                }
+                Button(
+                    onClick = onDelete,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .shadow(4.dp, RoundedCornerShape(12.dp)),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFE57373),
+                        disabledContainerColor = Color(0xFFB0BEC5)
+                    ),
+                    enabled = !isDeleting
+                ) {
+                    if (isDeleting) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Promotion",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
         }
@@ -957,19 +1039,14 @@ fun AddPromotionDialog(
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
 
-    // Formatter để hiển thị ngày
     val dateFormatter = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
 
-    // Hàm để hiển thị DatePickerDialog
     @Composable
     fun showDatePickerDialog(
         initialDate: Long?,
         onDateSelected: (Long) -> Unit,
         onDismiss: () -> Unit
     ) {
-        val calendar = Calendar.getInstance()
-        initialDate?.let { calendar.timeInMillis = it }
-
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = initialDate ?: System.currentTimeMillis()
         )
@@ -1246,7 +1323,6 @@ fun AddPromotionDialog(
         }
     }
 
-    // Hiển thị DatePickerDialog cho Start Date
     if (showStartDatePicker) {
         showDatePickerDialog(
             initialDate = startDateMillis,
@@ -1255,7 +1331,315 @@ fun AddPromotionDialog(
         )
     }
 
-    // Hiển thị DatePickerDialog cho End Date
+    if (showEndDatePicker) {
+        showDatePickerDialog(
+            initialDate = endDateMillis,
+            onDateSelected = { endDateMillis = it },
+            onDismiss = { showEndDatePicker = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditPromotionDialog(
+    promotion: Promotion,
+    onDismiss: () -> Unit,
+    onUpdatePromotion: (Promotion) -> Unit
+) {
+    var code by remember { mutableStateOf(promotion.code) }
+    var description by remember { mutableStateOf(promotion.description) }
+    var discountType by remember { mutableStateOf(promotion.discountType) }
+    var discountValue by remember { mutableStateOf(promotion.discountValue.toString()) }
+    var startDateMillis by remember { mutableStateOf(promotion.startDate.time) }
+    var endDateMillis by remember { mutableStateOf(promotion.endDate.time) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var expanded by remember { mutableStateOf(false) }
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
+
+    val dateFormatter = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+
+    @Composable
+    fun showDatePickerDialog(
+        initialDate: Long,
+        onDateSelected: (Long) -> Unit,
+        onDismiss: () -> Unit
+    ) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialDate
+        )
+
+        DatePickerDialog(
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { onDateSelected(it) }
+                        onDismiss()
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        AnimatedVisibility(
+            visible = true,
+            enter = scaleIn() + fadeIn(),
+            exit = fadeOut()
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .shadow(8.dp, RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F2ED))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(20.dp)
+                        .fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Edit Promotion #${promotion.id}",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF313131)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = code,
+                        onValueChange = { code = it },
+                        label = { Text("Code") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color(0xFFC67C4E),
+                            unfocusedIndicatorColor = Color(0xFFB0BEC5),
+                            focusedLabelColor = Color(0xFFC67C4E),
+                            cursorColor = Color(0xFFC67C4E)
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Description") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color(0xFFC67C4E),
+                            unfocusedIndicatorColor = Color(0xFFB0BEC5),
+                            focusedLabelColor = Color(0xFFC67C4E),
+                            cursorColor = Color(0xFFC67C4E)
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = !expanded },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedTextField(
+                            value = discountType,
+                            onValueChange = {},
+                            label = { Text("Discount Type") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            readOnly = true,
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                            },
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color(0xFFC67C4E),
+                                unfocusedIndicatorColor = Color(0xFFB0BEC5),
+                                focusedLabelColor = Color(0xFFC67C4E),
+                                cursorColor = Color(0xFFC67C4E)
+                            )
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("PERCENTAGE") },
+                                onClick = {
+                                    discountType = "PERCENTAGE"
+                                    expanded = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("FIXED") },
+                                onClick = {
+                                    discountType = "FIXED"
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = discountValue,
+                        onValueChange = { discountValue = it },
+                        label = { Text("Discount Value") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color(0xFFC67C4E),
+                            unfocusedIndicatorColor = Color(0xFFB0BEC5),
+                            focusedLabelColor = Color(0xFFC67C4E),
+                            cursorColor = Color(0xFFC67C4E)
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = startDateMillis.let { dateFormatter.format(Date(it)) },
+                        onValueChange = {},
+                        label = { Text("Start Date") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showStartDatePicker = true },
+                        readOnly = true,
+                        trailingIcon = {
+                            IconButton(onClick = { showStartDatePicker = true }) {
+                                Icon(Icons.Default.CalendarToday, contentDescription = "Select start date")
+                            }
+                        },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color(0xFFC67C4E),
+                            unfocusedIndicatorColor = Color(0xFFB0BEC5),
+                            focusedLabelColor = Color(0xFFC67C4E),
+                            cursorColor = Color(0xFFC67C4E)
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = endDateMillis.let { dateFormatter.format(Date(it)) },
+                        onValueChange = {},
+                        label = { Text("End Date") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showEndDatePicker = true },
+                        readOnly = true,
+                        trailingIcon = {
+                            IconButton(onClick = { showEndDatePicker = true }) {
+                                Icon(Icons.Default.CalendarToday, contentDescription = "Select end date")
+                            }
+                        },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color(0xFFC67C4E),
+                            unfocusedIndicatorColor = Color(0xFFB0BEC5),
+                            focusedLabelColor = Color(0xFFC67C4E),
+                            cursorColor = Color(0xFFC67C4E)
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    errorMessage?.let {
+                        Text(
+                            text = it,
+                            color = Color(0xFFE57373),
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Button(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFB0BEC5)
+                            )
+                        ) {
+                            Text(
+                                text = "Cancel",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                try {
+                                    val parsedDiscountValue = discountValue.toDoubleOrNull()
+                                        ?: throw IllegalArgumentException("Invalid discount value")
+                                    if (code.isBlank() || description.isBlank()) {
+                                        throw IllegalArgumentException("Code and description cannot be empty")
+                                    }
+                                    val startDate = Date(startDateMillis)
+                                    val endDate = Date(endDateMillis)
+                                    if (startDate.after(endDate) || startDate == endDate) {
+                                        throw IllegalArgumentException("End date must be after start date")
+                                    }
+                                    val updatedPromotion = promotion.copy(
+                                        code = code,
+                                        description = description,
+                                        discountType = discountType,
+                                        discountValue = parsedDiscountValue,
+                                        startDate = startDate,
+                                        endDate = endDate
+                                    )
+                                    onUpdatePromotion(updatedPromotion)
+                                    errorMessage = null
+                                } catch (e: Exception) {
+                                    errorMessage = e.message
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF808080) // Gray color for Update button
+                            )
+                        ) {
+                            Text(
+                                text = "Update",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showStartDatePicker) {
+        showDatePickerDialog(
+            initialDate = startDateMillis,
+            onDateSelected = { startDateMillis = it },
+            onDismiss = { showStartDatePicker = false }
+        )
+    }
+
     if (showEndDatePicker) {
         showDatePickerDialog(
             initialDate = endDateMillis,

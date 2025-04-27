@@ -97,6 +97,7 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("com.google.ai.client.generativeai:generativeai:0.2.0")
+    implementation ("com.google.accompanist:accompanist-swiperefresh:0.27.0")
 
     // For Google Auth
     implementation("com.google.android.gms:play-services-auth:20.7.0")

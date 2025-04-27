@@ -3,7 +3,9 @@ package com.example.coffee4n.ui.owner_orders
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.coffee4n.model.Order
 import com.example.coffee4n.model.Promotion
+import com.example.coffee4n.model.User
 import com.example.coffee4n.repository.OrderItemRepository
 import com.example.coffee4n.repository.OrderRepository
 import com.example.coffee4n.repository.ProductRepository
@@ -11,9 +13,9 @@ import com.example.coffee4n.repository.PromotionRepository
 import com.example.coffee4n.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.first
 
 class OwnerOrderViewModel(
     private val orderRepository: OrderRepository,
@@ -37,11 +39,7 @@ class OwnerOrderViewModel(
             try {
                 orderRepository.getAllOrders(1, _state.value.orderPageSize).collect { orders ->
                     _state.update { currentState ->
-                        val filteredOrders = if (currentState.filterStatus != null) {
-                            orders.filter { it.status == currentState.filterStatus }
-                        } else {
-                            orders
-                        }
+                        val filteredOrders = applyFilters(orders, currentState.filterStatus, currentState.orderSearchQuery)
                         val totalOrders = orderRepository.getTotalOrderCount()
                         currentState.copy(
                             orders = orders,
@@ -63,19 +61,83 @@ class OwnerOrderViewModel(
         }
     }
 
+    fun addPromotion(promotion: Promotion) {
+        viewModelScope.launch {
+            _state.update { it.copy(isAddingPromotion = true) }
+            try {
+                val existingPromotion = promotionRepository.getPromotionByCode(promotion.code)
+                if (existingPromotion != null) {
+                    _state.update {
+                        it.copy(
+                            isAddingPromotion = false,
+                            promotionError = "Promotion code already exists"
+                        )
+                    }
+                    return@launch
+                }
+                val addedPromotion = promotionRepository.addPromotion(promotion)
+                _state.update {
+                    it.copy(
+                        showAddPromotionDialog = false,
+                        isAddingPromotion = false,
+                        promotionSuccessMessage = "Promotion ${addedPromotion.code} added successfully with ID ${addedPromotion.id}"
+                    )
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isAddingPromotion = false,
+                        promotionError = "Failed to add promotion: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+
+    fun showEditPromotionDialog(promotionId: Int) {
+        _state.update { it.copy(selectedPromotionId = promotionId) }
+    }
+
+    fun hideEditPromotionDialog() {
+        _state.update { it.copy(selectedPromotionId = null) }
+    }
+
+    fun updatePromotion(promotion: Promotion) {
+        viewModelScope.launch {
+            _state.update { it.copy(isUpdatingPromotion = true) }
+            try {
+                // First delete the old promotion
+                promotionRepository.deletePromotion(promotion.id)
+                // Then add the updated promotion with the same ID
+                promotionRepository.addPromotion(promotion)
+                _state.update {
+                    it.copy(
+                        selectedPromotionId = null,
+                        isUpdatingPromotion = false,
+                        promotionSuccessMessage = "Promotion ${promotion.code} updated successfully"
+                    )
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isUpdatingPromotion = false,
+                        promotionError = "Failed to update promotion: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+
     fun loadMoreOrders() {
         viewModelScope.launch {
+            if (_state.value.isLoading || !_state.value.hasMoreOrders) return@launch
             val nextPage = _state.value.currentOrderPage + 1
             _state.update { it.copy(isLoading = true) }
             try {
                 orderRepository.getAllOrders(nextPage, _state.value.orderPageSize).collect { newOrders ->
                     _state.update { currentState ->
                         val updatedOrders = currentState.orders + newOrders
-                        val filteredOrders = if (currentState.filterStatus != null) {
-                            updatedOrders.filter { it.status == currentState.filterStatus }
-                        } else {
-                            updatedOrders
-                        }
+                        val filteredOrders = applyFilters(updatedOrders, currentState.filterStatus, currentState.orderSearchQuery)
                         val totalOrders = orderRepository.getTotalOrderCount()
                         currentState.copy(
                             orders = updatedOrders,
@@ -98,21 +160,52 @@ class OwnerOrderViewModel(
         }
     }
 
+    fun refreshOrders() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, currentOrderPage = 1, orders = emptyList(), filteredOrders = emptyList()) }
+            try {
+                orderRepository.getAllOrders(1, _state.value.orderPageSize).collect { orders ->
+                    _state.update { currentState ->
+                        val filteredOrders = applyFilters(orders, currentState.filterStatus, currentState.orderSearchQuery)
+                        val totalOrders = orderRepository.getTotalOrderCount()
+                        currentState.copy(
+                            orders = orders,
+                            filteredOrders = filteredOrders,
+                            isLoading = false,
+                            error = null,
+                            hasMoreOrders = orders.size < totalOrders
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Failed to refresh orders: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+
+
     private fun loadPromotions() {
         viewModelScope.launch {
             _state.update { it.copy(isLoadingPromotions = true) }
             try {
                 promotionRepository.getPromotionsFlow().collect { promotions ->
+                    // Sắp xếp promotions theo startDate giảm dần (xa nhất đến gần nhất)
+                    val sortedPromotions = promotions.sortedBy { it.startDate.time }
                     _state.update { currentState ->
-                        val filteredPromotions = if (currentState.searchQuery.isNotBlank()) {
-                            promotions.filter {
-                                it.code.lowercase().contains(currentState.searchQuery.lowercase())
+                        val filteredPromotions = if (currentState.promotionSearchQuery.isNotBlank()) {
+                            sortedPromotions.filter {
+                                it.code.lowercase().contains(currentState.promotionSearchQuery.lowercase())
                             }
                         } else {
-                            promotions
+                            sortedPromotions
                         }
                         currentState.copy(
-                            promotions = promotions,
+                            promotions = sortedPromotions,
                             filteredPromotions = filteredPromotions,
                             isLoadingPromotions = false,
                             promotionError = null
@@ -136,11 +229,7 @@ class OwnerOrderViewModel(
 
     fun setFilterStatus(status: String?) {
         _state.update { currentState ->
-            val filteredOrders = if (status != null) {
-                currentState.orders.filter { it.status == status }
-            } else {
-                currentState.orders
-            }
+            val filteredOrders = applyFilters(currentState.orders, status, currentState.orderSearchQuery)
             currentState.copy(
                 filterStatus = status,
                 filteredOrders = filteredOrders
@@ -148,10 +237,32 @@ class OwnerOrderViewModel(
         }
     }
 
+    fun setOrderSearchQuery(query: String) {
+        _state.update { currentState ->
+            val filteredOrders = applyFilters(currentState.orders, currentState.filterStatus, query)
+            currentState.copy(
+                orderSearchQuery = query,
+                filteredOrders = filteredOrders
+            )
+        }
+    }
+
+    private fun applyFilters(orders: List<Order>, filterStatus: String?, orderSearchQuery: String): List<Order> {
+        var filtered = orders
+        if (filterStatus != null) {
+            filtered = filtered.filter { it.status == filterStatus }
+        }
+        if (orderSearchQuery.isNotBlank()) {
+            filtered = filtered.filter { it.id.toString().contains(orderSearchQuery) }
+        }
+        return filtered
+    }
+
     fun resetFilter() {
         _state.update {
             it.copy(
                 filterStatus = null,
+                orderSearchQuery = "",
                 filteredOrders = it.orders
             )
         }
@@ -190,11 +301,9 @@ class OwnerOrderViewModel(
                 )
             }
             try {
-                // Fetch customer
                 val order = state.value.orders.find { it.id == orderId }
                 val customer = order?.userId?.let { userRepository.getUserById(it) }
 
-                // Fetch order items
                 orderItemRepository.getOrderItemsByOrderId(orderId).collect { items ->
                     val orderItemsWithName = items.map { item ->
                         val product = try {
@@ -248,27 +357,6 @@ class OwnerOrderViewModel(
         _state.update { it.copy(showAddPromotionDialog = false) }
     }
 
-    fun addPromotion(promotion: Promotion) {
-        viewModelScope.launch {
-            try {
-                val addedPromotion = promotionRepository.addPromotion(promotion)
-                _state.update {
-                    it.copy(
-                        showAddPromotionDialog = false,
-                        promotionSuccessMessage = "Promotion ${addedPromotion.code} added successfully with ID ${addedPromotion.id}"
-                    )
-                }
-                loadPromotions()
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        promotionError = "Failed to add promotion: ${e.message}"
-                    )
-                }
-            }
-        }
-    }
-
     fun deletePromotion(promotionId: Int) {
         viewModelScope.launch {
             _state.update { it.copy(deletingPromotionId = promotionId) }
@@ -280,7 +368,6 @@ class OwnerOrderViewModel(
                         promotionSuccessMessage = "Promotion #$promotionId deleted successfully"
                     )
                 }
-                loadPromotions()
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
@@ -300,7 +387,7 @@ class OwnerOrderViewModel(
         _state.update { it.copy(promotionSuccessMessage = null) }
     }
 
-    fun setSearchQuery(query: String) {
+    fun setPromotionSearchQuery(query: String) {
         _state.update { currentState ->
             val filteredPromotions = if (query.isNotBlank()) {
                 currentState.promotions.filter {
@@ -310,7 +397,7 @@ class OwnerOrderViewModel(
                 currentState.promotions
             }
             currentState.copy(
-                searchQuery = query,
+                promotionSearchQuery = query,
                 filteredPromotions = filteredPromotions
             )
         }
