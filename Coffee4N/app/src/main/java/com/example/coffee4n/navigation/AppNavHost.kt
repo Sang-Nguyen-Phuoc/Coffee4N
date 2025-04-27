@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -58,7 +59,7 @@ fun AppNavHost(startDestination: String = Destinations.HOME, parentNavController
         Destinations.HOME,
         Destinations.CART,
         Destinations.ORDERS,
-        Destinations.NOTIFICATIONS,
+        Destinations.FAVORITES,
         Destinations.PROFILE,
         Destinations.BOOKING_TABLE
     )
@@ -131,11 +132,11 @@ fun AppNavHost(startDestination: String = Destinations.HOME, parentNavController
                             }
                         )
                         NavigationBarItem(
-                            icon = { Icon(Icons.Default.Notifications, contentDescription = "Notifications", Modifier.size(35.dp)) },
-                            label = { Text("Notifications", fontSize = 10.sp) },
-                            selected = currentRoute == Destinations.NOTIFICATIONS,
+                            icon = { Icon(Icons.Default.Favorite, contentDescription = "Favourites", Modifier.size(35.dp)) },
+                            label = { Text("Favourites", fontSize = 10.sp) },
+                            selected = currentRoute == Destinations.FAVORITES,
                             onClick = {
-                                navController.navigate(Destinations.NOTIFICATIONS) {
+                                navController.navigate(Destinations.FAVORITES) {
                                     popUpTo(Destinations.HOME) {
                                         inclusive = false
                                     }
@@ -178,6 +179,7 @@ fun AppNavHost(startDestination: String = Destinations.HOME, parentNavController
                     composable(Destinations.NOTIFICATIONS) { NotificationsScreen(parentNavController) }
                     composable(Destinations.PROFILE) { ProfileScreen(parentNavController) }
                     composable(Destinations.BOOKING_TABLE) { BookingTableScreen(parentNavController) }
+                    composable(Destinations.FAVORITES) { FavoritesScreen(navController)}
 
                     composable(
                         route = Destinations.PRODUCT_DETAILS,
