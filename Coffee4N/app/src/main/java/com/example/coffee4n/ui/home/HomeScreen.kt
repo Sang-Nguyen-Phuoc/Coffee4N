@@ -50,7 +50,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.coffee4n.R
 import com.example.coffee4n.model.Category
 import com.example.coffee4n.model.Product
-import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.ProductRepository
 import kotlinx.coroutines.flow.StateFlow
@@ -59,7 +58,6 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun HomeScreen(navController: NavController) {
     val context = LocalContext.current
-    AppDatabase.logDatabaseInfo(context)
 
     val viewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {

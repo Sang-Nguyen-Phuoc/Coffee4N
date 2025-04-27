@@ -1,14 +1,10 @@
 package com.example.coffee4n.model
 
-import androidx.room.Entity
-import androidx.room.Ignore
-import androidx.room.PrimaryKey
 import java.text.SimpleDateFormat
 import java.util.*
 
-@Entity(tableName = "promotion")
 data class Promotion(
-    @PrimaryKey val id: Int,
+    val id: Int,
     val code: String,
     val description: String,
     val discountType: String,
@@ -17,7 +13,6 @@ data class Promotion(
     val endDate: Date,
     val isActive: Boolean = true
 ) {
-    @Ignore
     fun isValid(): Boolean {
         val currentDate = Date()
         return isActive && currentDate.after(startDate) && currentDate.before(endDate)

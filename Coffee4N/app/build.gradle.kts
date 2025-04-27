@@ -68,8 +68,6 @@ android {
 
 dependencies {
     implementation(libs.firebase.auth.ktx)
-    implementation(libs.androidx.room.ktx)
-    kapt(libs.androidx.room.compiler)
 
     implementation(libs.androidx.core.ktx.v1120)
     implementation(libs.androidx.lifecycle.runtime.ktx)

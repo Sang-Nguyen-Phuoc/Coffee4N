@@ -43,7 +43,6 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.coffee4n.R
 import com.example.coffee4n.model.Owner
-import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -59,13 +58,12 @@ fun LoginScreen(navController: NavController) {
     val scope = rememberCoroutineScope()
 
     // Khởi tạo ViewModel với dependencies
-    val userDao = AppDatabase.getDatabase(context).userDao()
     val firebaseAuth = FirebaseAuth.getInstance()
     val firebaseDatabase = FirebaseDatabase.getInstance()
     val viewModel: LoginViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                return LoginViewModel(UserRepository(userDao, firebaseAuth, firebaseDatabase)) as T
+                return LoginViewModel(UserRepository(firebaseAuth, firebaseDatabase)) as T
             }
         }
     )

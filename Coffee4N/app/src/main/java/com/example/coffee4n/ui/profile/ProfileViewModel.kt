@@ -7,9 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.coffee4n.model.User
-import com.example.coffee4n.model.database.UserDao
 import com.example.coffee4n.repository.UserRepository
-import com.example.coffee4n.ui.owner_product.OwnerProductState
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +18,6 @@ import kotlinx.coroutines.launch
 
 class ProfileViewModel(
     application: Application,
-    private val userDao: UserDao,
     private val firebaseAuth: FirebaseAuth,
     private val firebaseDatabase: FirebaseDatabase
 ) : AndroidViewModel(application) {
@@ -34,7 +31,7 @@ class ProfileViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    private val userRepository = UserRepository(userDao, firebaseAuth, firebaseDatabase)
+    private val userRepository = UserRepository(firebaseAuth, firebaseDatabase)
 
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
@@ -120,13 +117,12 @@ class ProfileViewModel(
 
     class Factory(
         private val application: Application,
-        private val userDao: UserDao,
         private val firebaseAuth: FirebaseAuth,
         private val firebaseDatabase: FirebaseDatabase
     ) : ViewModelProvider.AndroidViewModelFactory(application) {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ProfileViewModel(application, userDao, firebaseAuth, firebaseDatabase) as T
+            return ProfileViewModel(application, firebaseAuth, firebaseDatabase) as T
         }
     }
 }

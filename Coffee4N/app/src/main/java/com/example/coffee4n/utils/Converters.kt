@@ -1,6 +1,5 @@
 package com.example.coffee4n.utils
 
-import androidx.room.TypeConverter
 import java.text.NumberFormat
 import java.util.Date
 import java.time.LocalDateTime
@@ -9,12 +8,10 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 class Converters {
-    @TypeConverter
     fun fromTimestamp(value: Long?): Date? {
         return value?.let { Date(it) }
     }
 
-    @TypeConverter
     fun dateToTimestamp(date: Date?): Long? {
         return date?.time
     }

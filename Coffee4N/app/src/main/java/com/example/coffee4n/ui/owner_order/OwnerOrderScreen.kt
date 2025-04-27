@@ -34,7 +34,6 @@ import androidx.navigation.NavController
 import com.example.coffee4n.model.Order
 import com.example.coffee4n.model.Promotion
 import com.example.coffee4n.model.User
-import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.repository.OrderItemRepository
 import com.example.coffee4n.repository.OrderRepository
 import com.example.coffee4n.repository.ProductRepository
@@ -65,7 +64,6 @@ fun OwnerOrderScreen(navController: NavController) {
     val promotionRepository = PromotionRepository(firebaseDatabase)
     val context = LocalContext.current
     val userRepository = UserRepository(
-        userDao = AppDatabase.getDatabase(context).userDao(),
         firebaseAuth = FirebaseAuth.getInstance(),
         firebaseDatabase = firebaseDatabase
     )

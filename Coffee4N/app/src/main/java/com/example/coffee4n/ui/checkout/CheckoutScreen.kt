@@ -31,7 +31,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.coffee4n.model.Promotion
-import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.*
 import com.example.coffee4n.ui.cart.CartItemWithProduct
@@ -54,7 +53,6 @@ fun CheckoutScreen(navController: NavController) {
     val orderRepository = OrderRepository(firebaseDatabase)
     val orderItemRepository = OrderItemRepository(firebaseDatabase)
     val userRepository = UserRepository(
-        userDao = AppDatabase.getDatabase(context).userDao(),
         firebaseAuth = FirebaseAuth.getInstance(),
         firebaseDatabase = firebaseDatabase
     )

@@ -32,7 +32,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.coffee4n.R
 import com.example.coffee4n.model.User
-import com.example.coffee4n.model.database.AppDatabase
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.ui.theme.Coffee4NTheme
 import com.google.firebase.auth.FirebaseAuth
@@ -42,14 +41,12 @@ import com.google.firebase.database.FirebaseDatabase
 fun ProfileScreen(navController: NavController) {
     val context = LocalContext.current
     val application = context.applicationContext as Application
-    val userDao = AppDatabase.getDatabase(context).userDao()
     val firebaseAuth = FirebaseAuth.getInstance()
     val firebaseDatabase = FirebaseDatabase.getInstance()
 
     val viewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModel.Factory(
             application = application,
-            userDao = userDao,
             firebaseAuth = firebaseAuth,
             firebaseDatabase = firebaseDatabase
         )
