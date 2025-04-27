@@ -1,9 +1,12 @@
 package com.example.coffee4n.ui.product_details
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,7 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -30,10 +35,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.coffee4n.R
-import com.example.coffee4n.model.CartItem
 import com.example.coffee4n.model.Product
 import com.example.coffee4n.navigation.Destinations
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,24 +47,23 @@ fun ProductDetailsScreen(
 ) {
     val context = LocalContext.current
     val productState by viewModel.productState.collectAsState()
-    val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-
-    // Initialize the quantity state
     var quantity by remember { mutableStateOf(1) }
+    val scrollState = rememberScrollState()
 
-    // Animation for the Add to Cart button
+    // Animations
     val addToCartScale = animateFloatAsState(
-        targetValue = if (productState.isAddingToCart) 0.9f else 1f,
-        label = "addToCartScale"
+        targetValue = if (productState.isAddingToCart) 0.95f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
     )
 
-    // Load product details
     LaunchedEffect(productId) {
         viewModel.loadProduct(productId)
     }
 
-    // Show snackbar for messages
     LaunchedEffect(productState.showSnackbar) {
         if (productState.showSnackbar) {
             val message = productState.snackbarMessage ?: productState.error ?: "Action completed"
@@ -70,21 +72,41 @@ fun ProductDetailsScreen(
         }
     }
 
-    // Check if product is loaded
+    // Loading state
     if (productState.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = Color(52, 235, 174))
+            CircularProgressIndicator(
+                color = Color(239, 83, 80),
+                strokeWidth = 4.dp
+            )
         }
         return
     }
 
-    // Handle error state
+    // Error state
     if (productState.error != null && !productState.showSnackbar) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Error: ${productState.error}")
+                Icon(
+                    Icons.Default.Error,
+                    contentDescription = "Error",
+                    tint = Color(239, 83, 80),
+                    modifier = Modifier.size(48.dp)
+                )
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = { navController.popBackStack() }) {
+                Text(
+                    text = productState.error ?: "Unknown error",
+                    fontSize = 16.sp,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
+                    onClick = { navController.popBackStack() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(239, 83, 80)
+                    ),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
                     Text("Go Back")
                 }
             }
@@ -92,459 +114,561 @@ fun ProductDetailsScreen(
         return
     }
 
-    // If product is not found
-    val product = productState.product ?: run {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Product not found")
-        }
-        return
-    }
+    val product = productState.product ?: return
 
-    // Main container without Scaffold
-    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
-        // Content column with scroll
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-        ) {
-            // Product Image
-            Box(
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFAF3E0))
+    ) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
-                    .background(Color(0xFFF5F5F5))
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
             ) {
-                if (!product.imageUrl.isNullOrEmpty()) {
-                    Image(
-                        painter = rememberAsyncImagePainter(model = product.imageUrl),
-                        contentDescription = product.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_coffee),
-                        contentDescription = product.name,
-                        modifier = Modifier
-                            .size(200.dp)
-                            .align(Alignment.Center),
-                        contentScale = ContentScale.Fit
-                    )
-                }
-
-                // Best Seller Badge
-                if (product.isBestSeller) {
-                    Surface(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(16.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFFFD700).copy(alpha = 0.9f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.Star,
-                                contentDescription = "Best Seller",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                "Best Seller",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
-                }
-
-                // Back button with shadow
-                IconButton(
-                    onClick = { navController.navigateUp() },
+                // Enhanced Product Image Section
+                Box(
                     modifier = Modifier
-                        .padding(16.dp)
-                        .size(40.dp)
-                        .shadow(4.dp, CircleShape)
-                        .background(Color.White.copy(alpha = 0.9f), CircleShape)
-                        .align(Alignment.TopStart)
+                        .fillMaxWidth()
+                        .height(400.dp)
+                        .background(Color.White)
                 ) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.Black
-                    )
-                }
-
-                // Favorite button
-                IconButton(
-                    onClick = { viewModel.toggleFavorite(product) },
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .size(40.dp)
-                        .shadow(4.dp, CircleShape)
-                        .background(Color.White.copy(alpha = 0.9f), CircleShape)
-                        .align(Alignment.TopEnd)
-                ) {
-                    if (productState.isUpdatingFavorite) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color(52, 235, 174),
-                            strokeWidth = 2.dp
+                    if (!product.imageUrl.isNullOrEmpty()) {
+                        Image(
+                            painter = rememberAsyncImagePainter(model = product.imageUrl),
+                            contentDescription = product.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
                         )
                     } else {
-                        Icon(
-                            imageVector = if (productState.isFavorite) Icons.Default.Favorite
-                            else Icons.Default.FavoriteBorder,
-                            contentDescription = "Favorite",
-                            tint = if (productState.isFavorite) Color.Red else Color.Gray
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_coffee),
+                            contentDescription = product.name,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(48.dp),
+                            contentScale = ContentScale.Fit
                         )
+                    }
+
+                    // Gradient overlay for better contrast
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Black.copy(alpha = 0.7f),
+                                        Color.Transparent,
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.3f)
+                                    ),
+                                    startY = 0f,
+                                    endY = 1000f
+                                )
+                            )
+                    )
+
+                    // Best Seller Badge - Enhanced
+                    if (product.isBestSeller) {
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(16.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color(0xFFFFD700)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    "Best Seller",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
+
+
+                }
+
+                // Product Info Section - Enhanced
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-24).dp),
+                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                    color = Color(0xFFFAF3E0)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                    ) {
+                        // Product Name and Quantity
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = product.name,
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black
+                                )
+
+                                // Category
+                                Surface(
+                                    modifier = Modifier.padding(top = 8.dp),
+                                    color = Color(239, 83, 80).copy(alpha = 0.1f),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(
+                                        text = viewModel.getCategoryName(product.categoryId),
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        color = Color(239, 83, 80),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+
+                            // Quantity Selector - Enhanced
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color.White,
+                                shadowElevation = 4.dp
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(4.dp)
+                                ) {
+                                    IconButton(
+                                        onClick = { if (quantity > 1) quantity-- },
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Remove,
+                                            contentDescription = "Decrease",
+                                            tint = Color(239, 83, 80)
+                                        )
+                                    }
+
+                                    Text(
+                                        text = quantity.toString(),
+                                        modifier = Modifier
+                                            .width(40.dp)
+                                            .padding(vertical = 8.dp),
+                                        textAlign = TextAlign.Center,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+
+                                    IconButton(
+                                        onClick = {
+                                            if (quantity < product.stockQuantity) quantity++
+                                        },
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            contentDescription = "Increase",
+                                            tint = Color(239, 83, 80)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Stock Status and In Cart Badge
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                color = if (product.stockQuantity > 0)
+                                    Color(0xFF4CAF50).copy(alpha = 0.1f)
+                                else
+                                    Color.Red.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = if (product.stockQuantity > 0)
+                                        "In Stock (${product.stockQuantity})"
+                                    else
+                                        "Out of Stock",
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    color = if (product.stockQuantity > 0)
+                                        Color(0xFF4CAF50)
+                                    else
+                                        Color.Red,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            if (productState.isInCart) {
+                                Surface(
+                                    color = Color(0xFF2196F3).copy(alpha = 0.1f),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(
+                                        text = "In Cart",
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        color = Color(0xFF2196F3),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Price and Rating Row - Enhanced
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Price",
+                                    fontSize = 14.sp,
+                                    color = Color.Gray
+                                )
+                                Text(
+                                    text = "$${String.format("%.2f", product.price)}",
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(239, 83, 80)
+                                )
+                            }
+
+                            // Rating - Enhanced
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color(0xFFFFF8E1)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Star,
+                                        contentDescription = "Rating",
+                                        tint = Color(0xFFFFD700),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "4.5",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF795548)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "(128)",
+                                        fontSize = 14.sp,
+                                        color = Color.Gray
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        // Description Section - Enhanced
+                        Text(
+                            text = "Description",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.White,
+                            shadowElevation = 2.dp
+                        ) {
+                            Text(
+                                text = product.description,
+                                modifier = Modifier.padding(16.dp),
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp,
+                                color = Color(0xFF424242)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        // Additional Information - Enhanced
+                        Text(
+                            text = "Additional Information",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.White,
+                            shadowElevation = 2.dp
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                EnhancedInfoRow(
+                                    icon = Icons.Default.Category,
+                                    title = "Category",
+                                    value = viewModel.getCategoryName(product.categoryId),
+                                    iconTint = Color(239, 83, 80)
+                                )
+
+                                Divider(
+                                    modifier = Modifier.padding(vertical = 12.dp),
+                                    color = Color(0xFFE0E0E0)
+                                )
+
+                                EnhancedInfoRow(
+                                    icon = Icons.Default.Inventory2,
+                                    title = "Stock",
+                                    value = "${product.stockQuantity} items",
+                                    iconTint = if (product.stockQuantity > 0)
+                                        Color(0xFF4CAF50)
+                                    else
+                                        Color.Red
+                                )
+
+                                Divider(
+                                    modifier = Modifier.padding(vertical = 12.dp),
+                                    color = Color(0xFFE0E0E0)
+                                )
+
+                                EnhancedInfoRow(
+                                    icon = Icons.Default.LocalShipping,
+                                    title = "Delivery",
+                                    value = "Same Day Delivery",
+                                    iconTint = Color(0xFF2196F3)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(100.dp))
                     }
                 }
             }
 
-            // Product Info
-            Column(
+
+
+        // Back button - Enhanced
+        FloatingActionButton(
+            onClick = { navController.navigateUp() },
+            modifier = Modifier
+                .padding(16.dp)
+                .size(48.dp)
+                .align(Alignment.TopStart),
+            containerColor = Color.White.copy(alpha = 0.9f),
+            elevation = FloatingActionButtonDefaults.elevation(8.dp)
+        ) {
+            Icon(
+                Icons.Default.ArrowBack,
+                contentDescription = "Back",
+                tint = Color.Black
+            )
+        }
+
+        // Favorite button - Enhanced
+        FloatingActionButton(
+            onClick = { viewModel.toggleFavorite(product) },
+            modifier = Modifier
+                .padding(16.dp)
+                .size(48.dp)
+                .align(Alignment.TopEnd),
+            containerColor = Color.White.copy(alpha = 0.9f),
+            elevation = FloatingActionButtonDefaults.elevation(8.dp)
+        ) {
+            if (productState.isUpdatingFavorite) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color(239, 83, 80),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Icon(
+                    imageVector = if (productState.isFavorite) Icons.Default.Favorite
+                    else Icons.Default.FavoriteBorder,
+                    contentDescription = "Favorite",
+                    tint = if (productState.isFavorite) Color(239, 83, 80) else Color.Gray
+                )
+            }
+        }
+            // Enhanced Bottom Bar
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .align(Alignment.BottomCenter),
+                color = Color.White,
+                shadowElevation = 16.dp
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = product.name,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    // Quantity Selector
-                    Card(
-                        modifier = Modifier
-                            .height(40.dp)
-                            .shadow(4.dp, shape = RoundedCornerShape(20.dp))
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.background(Color.White)
-                        ) {
-                            IconButton(
-                                onClick = { if (quantity > 1) quantity-- },
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Remove,
-                                    contentDescription = "Decrease",
-                                    tint = Color(52, 235, 174)
-                                )
-                            }
-
-                            Text(
-                                text = quantity.toString(),
-                                modifier = Modifier.width(30.dp),
-                                textAlign = TextAlign.Center,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            IconButton(
-                                onClick = { quantity++ },
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Add,
-                                    contentDescription = "Increase",
-                                    tint = Color(52, 235, 174)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Category & Stock
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        color = Color(0xFFE0E0E0),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
+                    Column {
                         Text(
-                            text = viewModel.getCategoryName(product.categoryId),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            fontSize = 12.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    if (product.stockQuantity > 0) {
-                        Surface(
-                            color = Color(0xFFE8F5E9),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text(
-                                text = "In Stock (${product.stockQuantity})",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                fontSize = 12.sp,
-                                color = Color(0xFF388E3C)
-                            )
-                        }
-                    } else {
-                        Surface(
-                            color = Color(0xFFFFEBEE),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text(
-                                text = "Out of Stock",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                fontSize = 12.sp,
-                                color = Color(0xFFD32F2F)
-                            )
-                        }
-                    }
-
-                    // Display already in cart badge if applicable
-                    if (productState.isInCart) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            color = Color(0xFFE1F5FE),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text(
-                                text = "In Cart",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                fontSize = 12.sp,
-                                color = Color(0xFF0288D1)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Price and Rating
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "$${String.format("%.2f", product.price)}",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(52, 235, 174)
-                    )
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    // Rating display
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Star,
-                            contentDescription = "Rating",
-                            tint = Color(0xFFFFD700),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "4.5",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "(128)",
+                            text = "Total Price",
                             fontSize = 14.sp,
                             color = Color.Gray
                         )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Description
-                Text(
-                    text = "Description",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = product.description,
-                    fontSize = 16.sp,
-                    lineHeight = 24.sp,
-                    color = Color.DarkGray
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Additional info
-                Text(
-                    text = "Additional Information",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                InfoRow(
-                    icon = Icons.Default.Category,
-                    title = "Category",
-                    value = viewModel.getCategoryName(product.categoryId)
-                )
-
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                InfoRow(
-                    icon = Icons.Default.Inventory2,
-                    title = "Stock",
-                    value = "${product.stockQuantity} items"
-                )
-
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                // Space for bottom bar
-                Spacer(modifier = Modifier.height(80.dp))
-            }
-        }
-
-        // Bottom Bar
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .align(Alignment.BottomCenter),
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 8.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Total",
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "$${String.format("%.2f", product.price * quantity)}",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(52, 235, 174)
-                    )
-                }
-
-                // View Cart Button (shown only when product is already in cart)
-                AnimatedVisibility(visible = productState.isInCart) {
-                    Button(
-                        onClick = { navController.navigate(Destinations.CART) },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF8BC34A)
-                        ),
-                        modifier = Modifier
-                            .padding(end = 8.dp)
-                            .height(50.dp)
-                    ) {
-                        Icon(Icons.Default.ShoppingCart, contentDescription = "View Cart")
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("View Cart")
-                    }
-                }
-
-                // Add to Cart Button
-                Button(
-                    onClick = {
-                        viewModel.addToCart(product, quantity)
-                    },
-                    enabled = product.stockQuantity > 0 && !productState.isAddingToCart,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(52, 235, 174),
-                        disabledContainerColor = Color.Gray
-                    ),
-                    modifier = Modifier
-                        .height(50.dp)
-                        .weight(1f)
-                        .scale(addToCartScale.value)
-                ) {
-                    if (productState.isAddingToCart) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            strokeWidth = 2.dp,
-                            modifier = Modifier.size(24.dp)
+                        Text(
+                            text = "$${String.format("%.2f", product.price * quantity)}",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(239, 83, 80)
                         )
-                    } else {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                if (productState.isInCart) Icons.Default.Add else Icons.Default.ShoppingCart,
-                                contentDescription = "Add to Cart"
-                            )
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    AnimatedVisibility(visible = productState.isInCart) {
+                        FilledTonalButton(
+                            onClick = { navController.navigate(Destinations.CART) },
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .height(56.dp),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = Color(0xFFE3F2FD),
+                                contentColor = Color(0xFF1976D2)
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Icon(Icons.Default.ShoppingCart, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(if (productState.isInCart) "Add More" else "Add to Cart")
+                            Text("View Cart")
+                        }
+                    }
+
+                    Button(
+                        onClick = { viewModel.addToCart(product, quantity) },
+                        enabled = product.stockQuantity > 0 && !productState.isAddingToCart,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp)
+                            .scale(addToCartScale.value),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(239, 83, 80),
+                            disabledContainerColor = Color.Gray
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        if (productState.isAddingToCart) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    if (productState.isInCart) Icons.Default.Add
+                                    else Icons.Default.ShoppingCart,
+                                    contentDescription = null
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    if (productState.isInCart) "Add More" else "Add to Cart",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        // Snackbar host
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 90.dp) // Position above bottom bar
-        )
-    }
-
-    // Login Dialog
-    if (productState.showLoginDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissLoginDialog() },
-            title = { Text("Login Required") },
-            text = { Text("You need to login to add items to your cart.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.dismissLoginDialog()
-                        navController.navigate(Destinations.LOGIN)
+        // Login Dialog
+        if (productState.showLoginDialog) {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissLoginDialog() },
+                title = { Text("Login Required") },
+                text = { Text("You need to login to add items to your cart.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.dismissLoginDialog()
+                            navController.navigate(Destinations.LOGIN)
+                        }
+                    ) {
+                        Text("Login")
                     }
-                ) {
-                    Text("Login")
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.dismissLoginDialog() }) {
+                        Text("Cancel")
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.dismissLoginDialog() }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
+            )
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .padding(bottom = 90.dp)
+            )
+        }
+
 }
+
 @Composable
-fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, value: String) {
+fun EnhancedInfoRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    value: String,
+    iconTint: Color = Color.Gray
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = title,
-            tint = Color.Gray,
-            modifier = Modifier.size(24.dp)
-        )
+        Surface(
+            shape = CircleShape,
+            color = iconTint.copy(alpha = 0.1f),
+            modifier = Modifier.size(40.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = iconTint,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.width(16.dp))
 
@@ -559,10 +683,8 @@ fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String
         Text(
             text = value,
             fontSize = 16.sp,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
         )
     }
 }
-
-// Helper extension function for formatting prices
-private fun Double.toFixed(digits: Int) = "%.${digits}f".format(this)

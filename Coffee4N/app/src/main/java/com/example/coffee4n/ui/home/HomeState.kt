@@ -11,5 +11,8 @@ data class HomeState(
     val selectedCategory: Int = 0,
     val searchQuery: String = "",
     val sortAscending: Boolean = true,
-    val showBestSellers: Boolean = false
+    val showBestSellers: Boolean = false,
+    val showSnackbar: Boolean = false,
+    val snackbarMessage: String? = null,
+    val showLoginDialog: Boolean = false
 )

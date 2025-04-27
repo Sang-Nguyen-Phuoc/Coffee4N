@@ -62,19 +62,14 @@ fun FavoritesScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.padding(bottom = 80.dp)
-            )
-        },
-        containerColor = Color.White
-    ) { paddingValues ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
         ) {
             // Professional Top Bar
             Surface(
@@ -213,6 +208,11 @@ fun FavoritesScreen(
                 )
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.padding(bottom = 80.dp)
+        )
     }
 }
 
