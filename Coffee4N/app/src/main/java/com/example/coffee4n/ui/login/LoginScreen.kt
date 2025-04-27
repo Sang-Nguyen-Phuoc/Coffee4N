@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -49,6 +50,7 @@ import com.example.coffee4n.R
 import com.example.coffee4n.model.Owner
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.UserRepository
+import com.example.coffee4n.ui.components.LanguageSelector
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -105,11 +107,12 @@ fun LoginScreen(navController: NavController) {
             }
         } catch (e: ApiException) {
             scope.launch {
-                snackbarHostState.showSnackbar("Google sign-in failed: ${e.message}")
+                snackbarHostState.showSnackbar(
+                    message = R.string.google_sign_in_failed.toString()
+                )
             }
         }
     }
-
 
     // Xử lý hiệu ứng phụ từ loginState
     LaunchedEffect(loginState.value) {
@@ -157,6 +160,19 @@ fun LoginScreen(navController: NavController) {
                 .fillMaxSize()
                 .padding(24.dp, 70.dp, 24.dp, 24.dp)
         ) {
+            // Language selector at the top right
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                LanguageSelector(
+                    onLanguageSelected = {
+                        // Restart the activity to apply language changes
+                        (context as? androidx.activity.ComponentActivity)?.recreate()
+                    }
+                )
+            }
+
             OwnerCard(
                 owner = owner ?: Owner(),
                 onChangeStore = {
@@ -170,25 +186,25 @@ fun LoginScreen(navController: NavController) {
                 modifier = Modifier.fillMaxHeight()
             ) {
                 Text(
-                    "Welcome! Glad to see you!",
+                    stringResource(R.string.welcome_message),
                     fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold, // Chữ in đậm
-                    color = Color.Black // Màu chữ đen
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
                 )
                 Spacer(modifier = Modifier.height(22.dp))
                 TextField(
                     value = email.value,
                     onValueChange = viewModel::onEmailChange,
-                    label = { Text("Enter your email", color = Color.Gray) }, // Placeholder màu xám
+                    label = { Text(stringResource(R.string.enter_email), color = Color.Gray) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp)) // Bo góc tròn
-                        .background(Color(0xFFF5F5F5)), // Màu nền xám nhạt
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF5F5F5)),
                     colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = Color.Transparent, // Ẩn đường viền khi focus
-                        unfocusedIndicatorColor = Color.Transparent, // Ẩn đường viền khi không focus
-                        focusedContainerColor = Color(0xFFF5F5F5), // Nền khi focus
-                        unfocusedContainerColor = Color(0xFFF5F5F5) // Nền khi không focus
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedContainerColor = Color(0xFFF5F5F5),
+                        unfocusedContainerColor = Color(0xFFF5F5F5)
                     ),
                     textStyle = TextStyle(fontSize = 20.sp)
                 )
@@ -196,26 +212,26 @@ fun LoginScreen(navController: NavController) {
                 TextField(
                     value = password.value,
                     onValueChange = viewModel::onPasswordChange,
-                    label = { Text("Enter your password", color = Color.Gray) }, // Placeholder màu xám
+                    label = { Text(stringResource(R.string.enter_password), color = Color.Gray) },
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
                                 imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = "Toggle password visibility",
-                                tint = Color.Gray // Màu xám cho icon mắt
+                                contentDescription = stringResource(R.string.toggle_password_visibility),
+                                tint = Color.Gray
                             )
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp)) // Bo góc tròn
-                        .background(Color(0xFFF5F5F5)), // Màu nền xám nhạt
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF5F5F5)),
                     colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = Color.Transparent, // Ẩn đường viền khi focus
-                        unfocusedIndicatorColor = Color.Transparent, // Ẩn đường viền khi không focus
-                        focusedContainerColor = Color(0xFFF5F5F5), // Nền khi focus
-                        unfocusedContainerColor = Color(0xFFF5F5F5) // Nền khi không focus
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedContainerColor = Color(0xFFF5F5F5),
+                        unfocusedContainerColor = Color(0xFFF5F5F5)
                     ),
                     textStyle = TextStyle(fontSize = 20.sp)
                 )
@@ -224,14 +240,14 @@ fun LoginScreen(navController: NavController) {
                     onClick = { /* Navigate to Forgot Password screen if implemented */ },
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text("Forgot Password?", color = Color.DarkGray) // Màu xám đậm cho link
+                    Text(stringResource(R.string.forgot_password), color = Color.DarkGray)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = {
                         if (email.value.isBlank() || password.value.isBlank()) {
                             scope.launch {
-                                snackbarHostState.showSnackbar("Please enter email and password")
+                                snackbarHostState.showSnackbar(message = R.string.please_enter_credentials.toString())
                             }
                         } else {
                             viewModel.login()
@@ -249,22 +265,21 @@ fun LoginScreen(navController: NavController) {
                     if (loginState.value is LoginState.Loading) {
                         CircularProgressIndicator(color = Color.White)
                     } else {
-                        Text("Login", color = Color.White)
+                        Text(stringResource(R.string.login), color = Color.White)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Or Login with",
+                    text = stringResource(R.string.or_login_with),
                     modifier = Modifier.align(Alignment.CenterHorizontally),
-                    color = Color.Gray // Màu xám cho văn bản
+                    color = Color.Gray
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-
                     IconButton(onClick = {
                         val signInIntent = googleSignInClient.signInIntent
                         googleSignInLauncher.launch(signInIntent)
@@ -275,7 +290,6 @@ fun LoginScreen(navController: NavController) {
                             modifier = Modifier.size(40.dp)
                         )
                     }
-
                 }
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -284,7 +298,7 @@ fun LoginScreen(navController: NavController) {
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
                     Text(
-                        "Continue as a guest",
+                        stringResource(R.string.continue_as_guest),
                         color = MaterialTheme.colorScheme.tertiary
                     )
                 }
@@ -294,10 +308,10 @@ fun LoginScreen(navController: NavController) {
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
                     Text(
-                        "Don't have an account? ",
-                        color = MaterialTheme.colorScheme.primary // Màu chính (teal) cho link
+                        stringResource(R.string.no_account),
+                        color = MaterialTheme.colorScheme.primary
                     )
-                    Text("Register Now",
+                    Text(stringResource(R.string.register_now),
                         color = MaterialTheme.colorScheme.tertiary)
                 }
             }
@@ -313,7 +327,7 @@ fun LoginScreen(navController: NavController) {
                 onDismissRequest = { viewModel.onDissmiss() },
                 title = {
                     Text(
-                        text = "Verify Owner",
+                        text = stringResource(R.string.verify_owner),
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF313131)
                     )
@@ -322,13 +336,11 @@ fun LoginScreen(navController: NavController) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            "Please enter the provided passcode to verify that you are the owner."
-                        )
+                        Text(stringResource(R.string.verify_owner_message))
                         OutlinedTextField(
                             value = passcode,
                             onValueChange = { viewModel.onPasscodeChange(it) },
-                            label = { Text("Passcode") },
+                            label = { Text(stringResource(R.string.passcode)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -348,7 +360,7 @@ fun LoginScreen(navController: NavController) {
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5A9280)),
                         shape = RoundedCornerShape(8.dp),
                     ) {
-                        Text("Verify", color = Color.White)
+                        Text(stringResource(R.string.verify), color = Color.White)
                     }
                 },
                 dismissButton = {
@@ -356,7 +368,7 @@ fun LoginScreen(navController: NavController) {
                         onClick = { viewModel.onDissmiss() },
                         colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF6D6D6D))
                     ) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.cancel))
                     }
                 },
                 containerColor = Color.White
@@ -428,7 +440,7 @@ fun OwnerCard(
             ) {
                 Row {
                     Text(
-                        "Visit another store",
+                        stringResource(R.string.visit_another_store),
                         color = Color.Black
                     )
                     Spacer(Modifier.width(4.dp))

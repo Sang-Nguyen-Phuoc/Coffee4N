@@ -25,6 +25,7 @@ import com.example.coffee4n.session.OwnerSession
 import com.example.coffee4n.ui.login.LoginScreen
 import com.example.coffee4n.ui.theme.Coffee4NTheme
 import com.example.coffee4n.ui.welcome.WelcomeScreen
+import com.example.coffee4n.utils.LanguageManager
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -33,6 +34,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Apply saved language preference
+        val savedLanguage = LanguageManager.getSavedLanguage(this)
+        LanguageManager.updateResources(this, savedLanguage)
 
         // Make the window draw under the status bar
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -74,4 +78,15 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun attachBaseContext(newBase: Context) {
+        val savedLanguage = LanguageManager.getSavedLanguage(newBase)
+        val context = newBase.createConfigurationContext(
+            newBase.resources.configuration.apply {
+                setLocale(java.util.Locale(savedLanguage))
+            }
+        )
+        super.attachBaseContext(context)
+    }
+
 }

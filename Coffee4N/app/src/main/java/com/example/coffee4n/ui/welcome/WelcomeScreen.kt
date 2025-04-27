@@ -17,6 +17,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -36,9 +40,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.example.coffee4n.R
 import com.example.coffee4n.model.Owner
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.session.OwnerSession
+import com.example.coffee4n.ui.components.LanguageSelector
 import com.example.coffee4n.ui.owner_inventory.ingredient_tab.IngredientTabViewModel
 
 @Composable
@@ -63,20 +69,34 @@ fun WelcomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF9F2ED))
-            .padding(16.dp)
+            .padding(16.dp).padding(PaddingValues(top = 40.dp))
+
     ) {
+        // Language selector at the top right
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            LanguageSelector(
+                onLanguageSelected = {
+                    // Restart the activity to apply language changes
+                    (context as? androidx.activity.ComponentActivity)?.recreate()
+                }
+            )
+        }
+
         Row (
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 50.dp, bottom = 20.dp)
+                .padding(top = 20.dp, bottom = 20.dp)
         ){
             Row (
                 verticalAlignment = Alignment.CenterVertically,
 
-            ) {
+                ) {
                 Text(
-                    text = "Choose Store",
+                    text = stringResource(R.string.choose_store),
                     color = Color.Black,
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
@@ -104,7 +124,7 @@ fun WelcomeScreen(
             } else {
                 if (owners.isEmpty()) {
                     Text(
-                        text = "No stores available",
+                        text = stringResource(R.string.no_stores_available),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Coffee4N</string>
+
+    <!-- Welcome Screen -->
+    <string name="choose_store">Choisir un magasin</string>
+    <string name="no_stores_available">Aucun magasin disponible</string>
+    <string name="visit_another_store">Visiter un autre magasin</string>
+
+    <!-- Login Screen -->
+    <string name="welcome_message">Bienvenue! Ravi de vous voir!</string>
+    <string name="enter_email">Entrez votre email</string>
+    <string name="enter_password">Entrez votre mot de passe</string>
+    <string name="forgot_password">Mot de passe oublié?</string>
+    <string name="login">Connexion</string>
+    <string name="or_login_with">Ou connectez-vous avec</string>
+    <string name="continue_as_guest">Continuer en tant qu\'invité</string>
+    <string name="no_account">Vous n\'avez pas de compte? </string>
+    <string name="register_now">Inscrivez-vous maintenant</string>
+    <string name="verify_owner">Vérifier le propriétaire</string>
+    <string name="verify_owner_message">Veuillez entrer le code fourni pour vérifier que vous êtes le propriétaire.</string>
+    <string name="passcode">Code</string>
+    <string name="verify">Vérifier</string>
+    <string name="cancel">Annuler</string>
+    <string name="invalid_passcode">Code incorrect</string>
+    <string name="invalid_credentials">Email ou mot de passe invalide</string>
+    <string name="please_enter_credentials">Veuillez entrer votre email et mot de passe</string>
+    <string name="google_sign_in_failed">Échec de la connexion Google: %1$s</string>
+    <string name="toggle_password_visibility">Afficher le mot de passe</string>
+
+    <!-- Signup Screen -->
+    <string name="create_account">Créez votre compte</string>
+    <string name="enter_username">Entrez votre nom d\'utilisateur</string>
+    <string name="confirm_password">Confirmez votre mot de passe</string>
+    <string name="agree_and_register">Accepter et s\'inscrire</string>
+    <string name="or_signup_with">Ou inscrivez-vous avec</string>
+    <string name="already_have_account">Vous avez déjà un compte? </string>
+    <string name="login_now">Connectez-vous maintenant</string>
+    <string name="account_created_success">Compte créé avec succès! Veuillez vous connecter.</string>
+    <string name="passwords_do_not_match">Les mots de passe ne correspondent pas</string>
+    <string name="signup_failed">Échec de l\'inscription</string>
+    <string name="back">Retour</string>
+    <string name="toggle_confirm_password_visibility">Afficher la confirmation du mot de passe</string>
+    <string name="google_signup_failed">Échec de l\'inscription Google: %1$s</string>
+
+    <!-- Common -->
+    <string name="loading">Chargement…</string>
+    <string name="error">Erreur</string>
+    <string name="close">Fermer</string>
+</resources>

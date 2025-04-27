@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -36,6 +37,7 @@ import androidx.navigation.NavController
 import com.example.coffee4n.R
 import com.example.coffee4n.navigation.Destinations
 import com.example.coffee4n.repository.UserRepository
+import com.example.coffee4n.ui.components.LanguageSelector
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -45,7 +47,6 @@ import com.google.firebase.database.FirebaseDatabase
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignupScreen(navController: NavController) {
-
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -75,7 +76,7 @@ fun SignupScreen(navController: NavController) {
 
     val googleSignInClient = remember {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(context.getString(R.string.default_web_client_id)) // Use your explicit string resource
+            .requestIdToken(context.getString(R.string.default_web_client_id))
             .requestEmail()
             .build()
         GoogleSignIn.getClient(context, gso)
@@ -91,7 +92,7 @@ fun SignupScreen(navController: NavController) {
                 viewModel.signUpWithGoogle(idToken)
             }
         } catch (e: ApiException) {
-            errorMessage = "Google sign-up failed: ${e.message}"
+            errorMessage = context.getString(R.string.google_signup_failed, e.message ?: "")
         }
     }
 
@@ -110,7 +111,7 @@ fun SignupScreen(navController: NavController) {
                     putBoolean("isFirstTime", false)
                     apply()
                 }
-                snackbarHostState.showSnackbar("Account created successfully! Please login.")
+                snackbarHostState.showSnackbar(context.getString(R.string.account_created_success))
                 navController.navigate(Destinations.LOGIN) {
                     popUpTo(Destinations.SIGNUP) { inclusive = true }
                 }
@@ -133,16 +134,30 @@ fun SignupScreen(navController: NavController) {
                 .fillMaxSize()
                 .padding(24.dp)
         ) {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(
-                    Icons.Default.ArrowBackIosNew,
-                    contentDescription = "Back",
-                    tint = Color.Black
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(
+                        Icons.Default.ArrowBackIosNew,
+                        contentDescription = stringResource(R.string.back),
+                        tint = Color.Black
+                    )
+                }
+                LanguageSelector(
+                    modifier = Modifier.padding(PaddingValues(top = 16.dp)),
+                    onLanguageSelected = {
+                        // Restart the activity to apply language changes
+                        (context as? androidx.activity.ComponentActivity)?.recreate()
+                    }
                 )
             }
+
             Spacer(modifier = Modifier.height(88.dp))
             Text(
-                "Create your account",
+                stringResource(R.string.create_account),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
@@ -151,7 +166,7 @@ fun SignupScreen(navController: NavController) {
             TextField(
                 value = username.value,
                 onValueChange = { viewModel.onUsernameChange(it) },
-                label = { Text("Enter your username", color = Color.Gray) },
+                label = { Text(stringResource(R.string.enter_username), color = Color.Gray) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
@@ -168,7 +183,7 @@ fun SignupScreen(navController: NavController) {
             TextField(
                 value = email.value,
                 onValueChange = { viewModel.onEmailChange(it) },
-                label = { Text("Enter your email", color = Color.Gray) },
+                label = { Text(stringResource(R.string.enter_email), color = Color.Gray) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
@@ -185,13 +200,13 @@ fun SignupScreen(navController: NavController) {
             TextField(
                 value = password.value,
                 onValueChange = { viewModel.onPasswordChange(it) },
-                label = { Text("Enter your password", color = Color.Gray) },
+                label = { Text(stringResource(R.string.enter_password), color = Color.Gray) },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = "Toggle password visibility",
+                            contentDescription = stringResource(R.string.toggle_password_visibility),
                             tint = Color.Gray
                         )
                     }
@@ -212,13 +227,13 @@ fun SignupScreen(navController: NavController) {
             TextField(
                 value = confirmPassword.value,
                 onValueChange = { viewModel.onConfirmPasswordChange(it) },
-                label = { Text("Confirm your password", color = Color.Gray) },
+                label = { Text(stringResource(R.string.confirm_password), color = Color.Gray) },
                 visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                         Icon(
                             imageVector = if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = "Toggle confirm password visibility",
+                            contentDescription = stringResource(R.string.toggle_confirm_password_visibility),
                             tint = Color.Gray
                         )
                     }
@@ -250,12 +265,12 @@ fun SignupScreen(navController: NavController) {
                 if (signupState.value is SignupState.Loading) {
                     CircularProgressIndicator(color = Color.White)
                 } else {
-                    Text(" Agree and Register", color = Color.White)
+                    Text(stringResource(R.string.agree_and_register), color = Color.White)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Or Signup with",
+                text = stringResource(R.string.or_signup_with),
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 color = Color.Gray
             )
@@ -281,11 +296,11 @@ fun SignupScreen(navController: NavController) {
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
                 Text(
-                    "Already have an account? ",
+                    stringResource(R.string.already_have_account),
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    "Login Now",
+                    stringResource(R.string.login_now),
                     color = MaterialTheme.colorScheme.tertiary
                 )
             }
