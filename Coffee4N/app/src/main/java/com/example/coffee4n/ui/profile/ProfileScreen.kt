@@ -2,34 +2,41 @@ package com.example.coffee4n.ui.profile
 
 import android.app.Application
 import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.coffee4n.R
 import com.example.coffee4n.model.User
 import com.example.coffee4n.navigation.Destinations
@@ -57,7 +64,6 @@ fun ProfileScreen(navController: NavController) {
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
-    // Giả sử lấy userId từ SharedPreferences
     val userId = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         .getInt("userId", 0)
 
@@ -67,60 +73,322 @@ fun ProfileScreen(navController: NavController) {
         }
     }
 
-    Coffee4NTheme {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = Color.White
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFAF3E0)) // Warm background color
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            // Enhanced Top Bar
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(239, 83, 80), // Coffee4N brand color
+                shadowElevation = 4.dp
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator()
-                } else if (error != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(PaddingValues(top = 16.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = error!!,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
+                        text = "Profile",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
-                } else {
-                    ProfileHeader(user)
-                    Spacer(modifier = Modifier.height(24.dp))
-                    UserInfoSection(user)
-                    if (userId != 0 ) {
-                        EditButton { viewModel.showEditDialog() }
-                        Spacer(Modifier.weight(1f))
-                        LogoutButton {
+
+                    if (userId != 0) {
+                        IconButton(
+                            onClick = { viewModel.showEditDialog() },
+                            modifier = Modifier.align(Alignment.CenterEnd)
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Edit Profile",
+                                tint = Color.White
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Main Content
+            when {
+                isLoading -> {
+                    LoadingState()
+                }
+                error != null -> {
+                    ErrorState(error)
+                }
+                else -> {
+                    ProfileContent(
+                        user = user,
+                        userId = userId,
+                        onEditClick = { viewModel.showEditDialog() },
+                        onLogoutClick = {
                             viewModel.logout(context)
                             navController.navigate(Destinations.LOGIN) {
                                 popUpTo(0)
                             }
-                        }
-                    }
-                    else {
-                        Spacer(Modifier.weight(1f))
-                        LoginButton {
+                        },
+                        onLoginClick = {
                             navController.navigate(Destinations.LOGIN)
+                        }
+                    )
+                }
+            }
+        }
+
+        // Edit Dialog
+        if (state.showEditDialog) {
+            EnhancedEditUserDialog(
+                email = state.email,
+                username = state.username,
+                name = state.name,
+                phone = state.phone,
+                address = state.address,
+                onUsernameChange = { viewModel.updateUsername(it) },
+                onNameChange = { viewModel.updateName(it) },
+                onPhoneChange = { viewModel.updatePhone(it) },
+                onAddressChange = { viewModel.updateAddress(it) },
+                onSave = { viewModel.saveUser() },
+                onDismiss = { viewModel.hideEditDialog() }
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = Color(239, 83, 80),
+            strokeWidth = 4.dp,
+            modifier = Modifier.size(48.dp)
+        )
+    }
+}
+
+@Composable
+private fun ErrorState(error: String?) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Icon(
+                Icons.Default.Error,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = Color(239, 83, 80)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = error ?: "An error occurred",
+                color = Color.Red,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileContent(
+    user: User?,
+    userId: Int,
+    onEditClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+    onLoginClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        // Profile Header with enhanced design
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(239, 83, 80),
+                            Color(239, 83, 80).copy(alpha = 0.8f),
+                            Color.Transparent
+                        )
+                    )
+                )
+                .padding(vertical = 32.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Profile Image with camera icon
+                Box {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_profile_placeholder),
+                        contentDescription = "Profile Picture",
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .border(3.dp, Color.White, CircleShape)
+                            .shadow(8.dp, CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    if (userId != 0) {
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .offset(x = (-8).dp, y = (-8).dp)
+                                .size(32.dp)
+                                .clickable { /* Handle profile image change */ },
+                            shape = CircleShape,
+                            color = Color.White,
+                            shadowElevation = 4.dp
+                        ) {
+                            Icon(
+                                Icons.Default.CameraAlt,
+                                contentDescription = "Change Profile Picture",
+                                modifier = Modifier
+                                    .padding(6.dp)
+                                    .size(20.dp),
+                                tint = Color(239, 83, 80)
+                            )
                         }
                     }
                 }
-                if (state.showEditDialog) {
-                    EditUserDialog(
-                        email = state.email,
-                        username = state.username,
-                        name = state.name,
-                        phone = state.phone,
-                        address = state.address,
-                        onUsernameChange = { viewModel.updateUsername(it) },
-                        onNameChange = { viewModel.updateName(it) },
-                        onPhoneChange = { viewModel.updatePhone(it) },
-                        onAddressChange = { viewModel.updateAddress(it) },
-                        onSave = { viewModel.saveUser()},
-                        onDismiss = { viewModel.hideEditDialog() }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = user?.name?.takeIf { it.isNotBlank() } ?: "Guest User",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+
+                Text(
+                    text = user?.email ?: if (userId == 0) "Please sign in" else "No Email",
+                    fontSize = 16.sp,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
+            }
+        }
+
+        // User Information Cards
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Account Information Card
+            if (userId != 0) {
+                EnhancedInfoCard(
+                    title = "Account Information",
+                    items = listOf(
+                        ProfileInfoItem(Icons.Default.Person, "Username", user?.username ?: "Not set"),
+                        ProfileInfoItem(Icons.Default.Email, "Email", user?.email ?: "Not set"),
+                        ProfileInfoItem(Icons.Default.Phone, "Phone", user?.phone ?: "Not set"),
+                        ProfileInfoItem(Icons.Default.LocationOn, "Address", user?.address ?: "Not set")
+                    )
+                )
+
+//                // Stats Card
+//                Card(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    shape = RoundedCornerShape(16.dp),
+//                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+//                    colors = CardDefaults.cardColors(containerColor = Color.White)
+//                ) {
+//                    Row(
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .padding(16.dp),
+//                        horizontalArrangement = Arrangement.SpaceEvenly
+//                    ) {
+//                        StatsItem(Icons.Default.ShoppingCart, "Orders", "12")
+//                        VerticalDivider()
+//                        StatsItem(Icons.Default.Favorite, "Favorites", "5")
+//                        VerticalDivider()
+//                        StatsItem(Icons.Default.Star, "Points", "250")
+//                    }
+//                }
+            }
+
+            // Action Buttons
+            if (userId != 0) {
+                EnhancedButton(
+                    text = "Edit Profile",
+                    icon = Icons.Default.Edit,
+                    onClick = onEditClick,
+                    backgroundColor = Color(239, 83, 80).copy(alpha = 0.1f),
+                    contentColor = Color(239, 83, 80)
+                )
+
+                EnhancedButton(
+                    text = "Sign Out",
+                    icon = Icons.Default.Logout,
+                    onClick = onLogoutClick,
+                    backgroundColor = Color.Red.copy(alpha = 0.1f),
+                    contentColor = Color.Red
+                )
+            } else {
+                EnhancedButton(
+                    text = "Sign In",
+                    icon = Icons.Default.Login,
+                    onClick = onLoginClick,
+                    backgroundColor = Color(239, 83, 80),
+                    contentColor = Color.White
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EnhancedInfoCard(
+    title: String,
+    items: List<ProfileInfoItem>
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = title,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            items.forEachIndexed { index, item ->
+                EnhancedInfoRow(item.icon, item.label, item.value)
+                if (index < items.size - 1) {
+                    Divider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = Color.LightGray.copy(alpha = 0.5f)
                     )
                 }
             }
@@ -129,143 +397,121 @@ fun ProfileScreen(navController: NavController) {
 }
 
 @Composable
-private fun ProfileHeader(user: User?) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_profile_placeholder),
-                contentDescription = "Profile Picture",
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = user?.name?.takeIf { it.isNotBlank() } ?: "No Name",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = user?.email ?: "No Email",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun UserInfoSection(user: User?) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            InfoItem(Icons.Default.Person, "Username", user?.username ?: "Not set")
-            InfoItem(Icons.Default.Phone, "Phone", user?.phone ?: "Not set")
-            InfoItem(Icons.Default.LocationOn, "Address", user?.address ?: "Not set")
-        }
-    }
-}
-
-@Composable
-private fun InfoItem(icon: ImageVector, label: String, value: String) {
+private fun EnhancedInfoRow(icon: ImageVector, label: String, value: String) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
+        Surface(
+            shape = CircleShape,
+            color = Color(239, 83, 80).copy(alpha = 0.1f),
+            modifier = Modifier.size(40.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = Color(239, 83, 80),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.width(16.dp))
+
         Column {
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontSize = 14.sp,
+                color = Color.Gray
             )
             Text(
                 text = value,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Black
             )
         }
     }
 }
 
 @Composable
-private fun EditButton(onClick: () -> Unit) {
-    Button(
+private fun StatsItem(icon: ImageVector, label: String, value: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = Color(239, 83, 80),
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = value,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = Color.Gray
+        )
+    }
+}
+
+@Composable
+private fun VerticalDivider() {
+    Box(
+        modifier = Modifier
+            .height(48.dp)
+            .width(1.dp)
+            .background(Color.LightGray.copy(alpha = 0.5f))
+    )
+}
+
+@Composable
+private fun EnhancedButton(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    backgroundColor: Color,
+    contentColor: Color
+) {
+    Surface(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
-            contentColor = Color.Black
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 0.dp)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = backgroundColor,
+        shadowElevation = 4.dp
     ) {
-        Icon(
-            imageVector = Icons.Default.Edit,
-            contentDescription = "Edit account",
-            modifier = Modifier.size(18.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Edit account", fontSize = 16.sp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = text,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = contentColor
+            )
+        }
     }
 }
 
-@Composable
-private fun LoginButton(onLogin: () -> Unit) {
-    Button(
-        onClick = onLogin,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.primary
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 16.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Default.Login,
-            contentDescription = "Login",
-            modifier = Modifier.size(18.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Log In", fontSize = 16.sp)
-    }
-}
-
-@Composable
-private fun LogoutButton(onLogout: () -> Unit) {
-    Button(
-        onClick = onLogout,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.error
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 16.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Default.Logout,
-            contentDescription = "Logout",
-            modifier = Modifier.size(18.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Log Out", fontSize = 16.sp)
-    }
-}
-
-
+data class ProfileInfoItem(
+    val icon: ImageVector,
+    val label: String,
+    val value: String
+)
