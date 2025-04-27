@@ -1,9 +1,8 @@
 package com.example.coffee4n.ui.orders
 
 import android.content.Context
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,21 +11,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -50,36 +47,12 @@ fun OrdersScreen(navController: NavController) {
 
     if (userId == 0) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFFAF3E0)),
             contentAlignment = Alignment.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Please login to view your orders",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF6B4E31)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = { navController.navigate("login") },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6B4E31)),
-                    modifier = Modifier
-                        .height(48.dp)
-                        .shadow(4.dp, RoundedCornerShape(12.dp)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = "Login",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
+            LoginRequiredContent(navController)
         }
     } else {
         val orderRepository = try {
@@ -100,15 +73,12 @@ fun OrdersScreen(navController: NavController) {
 
         if (orderRepository == null || orderItemRepository == null || productRepository == null) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFFAF3E0)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Failed to initialize repositories",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFFE57373)
-                )
+                ErrorContent("Failed to initialize repositories")
             }
             return
         }
@@ -120,245 +90,124 @@ fun OrdersScreen(navController: NavController) {
         val snackbarHostState = remember { SnackbarHostState() }
         var showDatePicker by remember { mutableStateOf(false) }
 
-            Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                "YOUR ORDERS",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF6B4E31)
-                            )
-                        }
-                    },
-                    navigationIcon = {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFFAF3E0))
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Enhanced Top Bar
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color.White,
+                    shadowElevation = 4.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         IconButton(
-                            onClick = {
-                                try {
-                                    navController.popBackStack()
-                                } catch (e: Exception) {
-                                    // Handle navigation error silently
-                                }
-                            },
-                            modifier = Modifier
-                                .padding(start = 8.dp)
-                                .size(32.dp)
+                            onClick = { navController.popBackStack() },
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 Icons.Default.ArrowBack,
                                 contentDescription = "Back",
-                                tint = Color(0xFF6B4E31),
-                                modifier = Modifier.size(20.dp)
+                                tint = Color.Black,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = Color(0xFFFAF3E0),
-                        titleContentColor = Color(0xFF6B4E31),
-                        navigationIconContentColor = Color(0xFF6B4E31)
-                    ),
-                    modifier = Modifier
-                        .height(56.dp)
-                        .shadow(4.dp)
-                )
-            },
-            snackbarHost = { SnackbarHost(snackbarHostState) },
-            containerColor = Color(0xFFF5E8C7)
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
-                    .fillMaxSize()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = state.searchDate,
-                        onValueChange = { },
-                        label = { Text("Search by date (dd/MM/yyyy)") },
-                        modifier = Modifier
-                            .weight(1f),
-                        readOnly = true,
-                        trailingIcon = {
-                            IconButton(onClick = { showDatePicker = true }) {
-                                Icon(
-                                    Icons.Default.CalendarToday,
-                                    contentDescription = "Select Date",
-                                    tint = Color(0xFF6B4E31)
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Text(
+                            "My Orders",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        if (state.orders.isNotEmpty()) {
+                            Surface(
+                                color = Color(239, 83, 80).copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = "${state.orders.size} orders",
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    color = Color(239, 83, 80),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF6B4E31),
-                            unfocusedBorderColor = Color(0xFF8D7A55),
-                            focusedLabelColor = Color(0xFF6B4E31),
-                            unfocusedLabelColor = Color(0xFF8D7A55),
-                            cursorColor = Color(0xFF6B4E31),
-                            disabledBorderColor = Color(0xFF8D7A55),
-                            disabledLabelColor = Color(0xFF8D7A55),
-                            disabledTextColor = Color(0xFF6B4E31)
-                        ),
-                        enabled = false
+                        }
+                    }
+                }
+
+                // Enhanced Search Section
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    EnhancedDatePicker(
+                        selectedDate = state.searchDate,
+                        onDateSelected = { viewModel.updateSearchDate(it) },
+                        onClear = { viewModel.updateSearchDate("") }
                     )
-                    AnimatedVisibility(
-                        visible = state.searchDate.isNotEmpty(),
-                        modifier = Modifier.padding(start = 8.dp)
-                    ) {
-                        IconButton(
-                            onClick = { viewModel.updateSearchDate("") },
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(Color(0xFFE57373).copy(alpha = 0.1f), CircleShape)
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Reset Filter",
-                                tint = Color(0xFFE57373)
-                            )
-                        }
-                    }
                 }
 
-                if (showDatePicker) {
-                    val datePickerState = rememberDatePickerState()
-                    DatePickerDialog(
-                        onDismissRequest = { showDatePicker = false },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    try {
-                                        val selectedDate = datePickerState.selectedDateMillis
-                                        if (selectedDate != null) {
-                                            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                                            val formattedDate = sdf.format(Date(selectedDate))
-                                            viewModel.updateSearchDate(formattedDate)
-                                        }
-                                    } catch (e: Exception) {
-                                        // Handle date formatting error silently
-                                    }
-                                    showDatePicker = false
-                                }
-                            ) {
-                                Text("OK", color = Color(0xFF6B4E31))
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showDatePicker = false }) {
-                                Text("Cancel", color = Color(0xFF8D7A55))
-                            }
-                        },
-                        colors = DatePickerDefaults.colors(
-                            containerColor = Color(0xFFFAF3E0),
-                            titleContentColor = Color(0xFF6B4E31),
-                            headlineContentColor = Color(0xFF6B4E31),
-                            selectedDayContainerColor = Color(0xFF6B4E31),
-                            selectedDayContentColor = Color.White
-                        )
-                    ) {
-                        DatePicker(
-                            state = datePickerState,
-                            modifier = Modifier.padding(16.dp),
-                            colors = DatePickerDefaults.colors(
-                                selectedDayContainerColor = Color(0xFF6B4E31),
-                                selectedDayContentColor = Color.White,
-                                todayContentColor = Color(0xFF6B4E31),
-                                todayDateBorderColor = Color(0xFF6B4E31)
-                            )
-                        )
+                // Main Content
+                when {
+                    state.isLoading -> {
+                        LoadingState()
                     }
-                }
-
-                AnimatedVisibility(
-                    visible = state.isLoading,
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(
-                            color = Color(0xFF6B4E31),
-                            strokeWidth = 4.dp
-                        )
+                    state.error != null -> {
+                        ErrorState(state.error ?: "An error occurred")
                     }
-                }
-
-                AnimatedVisibility(
-                    visible = !state.isLoading && state.error != null,
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            state.error ?: "An error occurred",
-                            color = Color(0xFFE57373),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                    state.orders.isEmpty() -> {
+                        EmptyOrdersState()
                     }
-                }
-
-                AnimatedVisibility(
-                    visible = !state.isLoading && state.error == null && state.orders.isEmpty(),
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No orders found",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF8D7A55)
+                    else -> {
+                        OrdersList(
+                            orders = state.orders,
+                            orderItems = state.orderItems,
+                            expandedOrders = state.expandedOrders,
+                            onToggleExpand = { viewModel.toggleOrderExpansion(it) },
+                            onCancel = { viewModel.cancelOrder(it) }
                         )
-                    }
-                }
-
-                AnimatedVisibility(
-                    visible = !state.isLoading && state.error == null && state.orders.isNotEmpty(),
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(state.orders) { order ->
-                            OrderCard(
-                                order = order,
-                                orderItems = state.orderItems[order.order.id] ?: emptyList(),
-                                isExpanded = state.expandedOrders.contains(order.order.id),
-                                onToggleExpand = { viewModel.toggleOrderExpansion(order.order.id) },
-                                onCancel = {
-                                    try {
-                                        viewModel.cancelOrder(order.order.id)
-                                    } catch (e: Exception) {
-                                        // Handle cancel order error silently
-                                    }
-                                }
-                            )
-                        }
                     }
                 }
             }
-        }
 
-        state.successMessage?.let { message ->
-            LaunchedEffect(message) {
-                try {
+            // Snackbar
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+            )
+
+            // Date Picker Dialog
+            if (showDatePicker) {
+                DatePickerModal(
+                    onDateSelected = { viewModel.updateSearchDate(it) },
+                    onDismiss = { showDatePicker = false }
+                )
+            }
+
+            // Success message
+            LaunchedEffect(state.successMessage) {
+                state.successMessage?.let { message ->
                     snackbarHostState.showSnackbar(message)
                     viewModel.clearSuccessMessage()
-                } catch (e: Exception) {
-                    // Handle snackbar error silently
                 }
             }
         }
@@ -366,31 +215,325 @@ fun OrdersScreen(navController: NavController) {
 }
 
 @Composable
-fun OrderCard(
+private fun LoginRequiredContent(navController: NavController) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.padding(32.dp)
+    ) {
+        Icon(
+            Icons.Default.Receipt,
+            contentDescription = null,
+            modifier = Modifier
+                .size(80.dp)
+                .padding(bottom = 16.dp),
+            tint = Color(239, 83, 80)
+        )
+
+        Text(
+            text = "Sign in to view your orders",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "Track your orders and reorder your favorites",
+            fontSize = 16.sp,
+            color = Color.Gray,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Button(
+            onClick = { navController.navigate("login") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .shadow(8.dp, RoundedCornerShape(28.dp)),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(239, 83, 80)
+            ),
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    Icons.Default.Login,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Sign In",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ErrorContent(message: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(32.dp)
+    ) {
+        Icon(
+            Icons.Default.Error,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = Color(239, 83, 80)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = message,
+            color = Color.Red,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EnhancedDatePicker(
+    selectedDate: String,
+    onDateSelected: (String) -> Unit,
+    onClear: () -> Unit
+) {
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    OutlinedTextField(
+        value = selectedDate,
+        onValueChange = { },
+        label = { Text("Filter by date") },
+        placeholder = { Text("dd/MM/yyyy") },
+        modifier = Modifier.fillMaxWidth(),
+        readOnly = true,
+        trailingIcon = {
+            Row {
+                if (selectedDate.isNotEmpty()) {
+                    IconButton(onClick = onClear) {
+                        Icon(
+                            Icons.Default.Clear,
+                            contentDescription = "Clear date",
+                            tint = Color.Gray
+                        )
+                    }
+                }
+                IconButton(onClick = { showDatePicker = true }) {
+                    Icon(
+                        Icons.Default.CalendarToday,
+                        contentDescription = "Select date",
+                        tint = Color(239, 83, 80)
+                    )
+                }
+            }
+        },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(239, 83, 80),
+            unfocusedBorderColor = Color.LightGray,
+            focusedLabelColor = Color(239, 83, 80),
+            unfocusedLabelColor = Color.Gray
+        ),
+        shape = RoundedCornerShape(12.dp)
+    )
+
+    if (showDatePicker) {
+        DatePickerModal(
+            onDateSelected = {
+                onDateSelected(it)
+                showDatePicker = false
+            },
+            onDismiss = { showDatePicker = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DatePickerModal(
+    onDateSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val datePickerState = rememberDatePickerState()
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                        val formattedDate = sdf.format(Date(millis))
+                        onDateSelected(formattedDate)
+                    }
+                }
+            ) {
+                Text("OK", color = Color(239, 83, 80))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = Color.Gray)
+            }
+        }
+    ) {
+        DatePicker(
+            state = datePickerState,
+            colors = DatePickerDefaults.colors(
+                selectedDayContainerColor = Color(239, 83, 80),
+                todayDateBorderColor = Color(239, 83, 80)
+            )
+        )
+    }
+}
+
+@Composable
+private fun LoadingState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = Color(239, 83, 80),
+            strokeWidth = 4.dp,
+            modifier = Modifier.size(48.dp)
+        )
+    }
+}
+
+@Composable
+private fun ErrorState(error: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Icon(
+                Icons.Default.Error,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = Color(239, 83, 80)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = error,
+                color = Color.Red,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyOrdersState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Icon(
+                Icons.Default.Receipt,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(120.dp)
+                    .padding(bottom = 24.dp),
+                tint = Color.Gray.copy(alpha = 0.5f)
+            )
+            Text(
+                text = "No orders found",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Your order history will appear here",
+                fontSize = 16.sp,
+                color = Color.Gray,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun OrdersList(
+    orders: List<OrderWithDetails>,
+    orderItems: Map<Int, List<OrderItemWithProduct>>,
+    expandedOrders: Set<Int>,
+    onToggleExpand: (Int) -> Unit,
+    onCancel: (Int) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        items(orders) { order ->
+            EnhancedOrderCard(
+                order = order,
+                orderItems = orderItems[order.order.id] ?: emptyList(),
+                isExpanded = expandedOrders.contains(order.order.id),
+                onToggleExpand = { onToggleExpand(order.order.id) },
+                onCancel = { onCancel(order.order.id) }
+            )
+        }
+    }
+}
+
+@Composable
+fun EnhancedOrderCard(
     order: OrderWithDetails,
     orderItems: List<OrderItemWithProduct>,
     isExpanded: Boolean,
     onToggleExpand: () -> Unit,
     onCancel: () -> Unit
 ) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .shadow(6.dp, RoundedCornerShape(16.dp)),
+            .scale(scale)
+            .clickable(
+                onClick = {
+                    isPressed = true
+                    onToggleExpand()
+                    isPressed = false
+                }
+            ),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFAF3E0))
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(
             modifier = Modifier
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFFAF3E0),
-                            Color(0xFFF5E8C7)
-                        )
-                    )
-                )
+                .fillMaxWidth()
                 .padding(16.dp)
         ) {
             Row(
@@ -399,113 +542,114 @@ fun OrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Order #${order.order.id}",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        StatusBadge(order.order.status)
+                    }
                     Text(
-                        "Order #${order.order.id}",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF6B4E31)
-                    )
-                    Text(
-                        try {
-                            SimpleDateFormat("dd/MM/yyyy").format(order.order.orderDate)
-                        } catch (e: Exception) {
-                            "Invalid date"
-                        },
+                        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                            .format(order.order.orderDate),
                         fontSize = 14.sp,
-                        color = Color(0xFF8D7A55)
+                        color = Color.Gray
                     )
                 }
-                IconButton(
-                    onClick = onToggleExpand,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(Color(0xFF6B4E31).copy(alpha = 0.1f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = if (isExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                        contentDescription = if (isExpanded) "Collapse" else "Expand",
-                        tint = Color(0xFF6B4E31),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp
+                    else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    tint = Color(239, 83, 80)
+                )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    try {
-                        "Total: $${"%.2f".format(order.order.totalAmount)}"
-                    } catch (e: Exception) {
-                        "Total: Invalid amount"
-                    },
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF6B4E31)
-                )
-                Text(
-                    order.order.status,
-                    fontSize = 14.sp,
-                    color = when (order.order.status) {
-                        "PENDING" -> Color(0xFFFFA726)
-                        "COMPLETED" -> Color(0xFF4CAF50)
-                        "CANCELLED" -> Color(0xFFE57373)
-                        else -> Color(0xFFE57373)
-                    },
-                    fontWeight = FontWeight.Medium
-                )
-            }
-            Text(
-                try {
-                    "Delivery: ${order.order.deliveryMethod}"
-                } catch (e: Exception) {
-                    "Delivery: Unknown"
-                },
-                fontSize = 14.sp,
-                color = Color(0xFF8D7A55)
-            )
-
-            AnimatedVisibility(visible = order.order.status == "PENDING") {
-                Button(
-                    onClick = onCancel,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp)
-                        .height(48.dp)
-                        .shadow(4.dp, RoundedCornerShape(12.dp)),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFE57373),
-                        contentColor = Color.White
+                Column {
+                    Text(
+                        "Total Amount",
+                        fontSize = 14.sp,
+                        color = Color.Gray
                     )
+                    Text(
+                        "$${String.format("%.2f", order.order.totalAmount)}",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(239, 83, 80)
+                    )
+                }
+
+                Surface(
+                    color = Color(239, 83, 80).copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        "Cancel Order",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                        order.order.deliveryMethod,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        color = Color(239, 83, 80),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
 
-            AnimatedVisibility(visible = isExpanded) {
-                Column(modifier = Modifier.padding(top = 16.dp)) {
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column {
                     Divider(
-                        color = Color(0xFF8D7A55).copy(alpha = 0.5f),
-                        thickness = 1.dp,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        color = Color.LightGray
                     )
-                    if (orderItems.isEmpty()) {
-                        Text(
-                            "No items found",
-                            fontSize = 14.sp,
-                            color = Color(0xFF8D7A55),
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    } else {
-                        orderItems.forEach { item ->
-                            OrderItemRow(item)
-                            Spacer(modifier = Modifier.height(8.dp))
+
+                    orderItems.forEach { item ->
+                        EnhancedOrderItemRow(item)
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    if (order.order.status == "PENDING") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = onCancel,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Red,
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Cancel,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Cancel Order",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -515,50 +659,66 @@ fun OrderCard(
 }
 
 @Composable
-fun OrderItemRow(item: OrderItemWithProduct) {
+private fun StatusBadge(status: String) {
+    val statusColor = when (status) {
+        "PENDING" -> Color(0xFFFFA726)
+        "COMPLETED" -> Color(0xFF4CAF50)
+        "CANCELLED" -> Color(0xFFE57373)
+        else -> Color.Gray
+    }
+
+    Surface(
+        color = statusColor.copy(alpha = 0.1f),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(
+            text = status,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            color = statusColor,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun EnhancedOrderItemRow(item: OrderItemWithProduct) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                try {
-                    item.productName
-                } catch (e: Exception) {
-                    "Unknown Product"
-                },
-                fontSize = 14.sp,
+                item.productName,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF6B4E31)
+                color = Color.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            Text(
-                try {
-                    "Quantity: ${item.orderItem.quantity}"
-                } catch (e: Exception) {
-                    "Quantity: Unknown"
-                },
-                fontSize = 12.sp,
-                color = Color(0xFF8D7A55)
-            )
-            Text(
-                try {
-                    "Price: $${"%.2f".format(item.orderItem.price)}"
-                } catch (e: Exception) {
-                    "Price: Unknown"
-                },
-                fontSize = 12.sp,
-                color = Color(0xFF8D7A55)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 4.dp)
+            ) {
+                Text(
+                    "$${"%.2f".format(item.orderItem.price)}",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+                Text(
+                    " × ${item.orderItem.quantity}",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+            }
         }
+
         Text(
-            try {
-                "$${"%.2f".format(item.orderItem.price * item.orderItem.quantity)}"
-            } catch (e: Exception) {
-                "$0.00"
-            },
-            fontSize = 14.sp,
+            "$${"%.2f".format(item.orderItem.price * item.orderItem.quantity)}",
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF6B4E31)
+            color = Color(239, 83, 80)
         )
     }
 }
