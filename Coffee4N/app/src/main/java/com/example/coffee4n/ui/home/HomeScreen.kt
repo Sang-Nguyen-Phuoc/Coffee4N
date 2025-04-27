@@ -75,19 +75,14 @@ fun HomeScreen(navController: NavController) {
         .let { list -> if (state.showBestSellers) list.filter { it.isBestSeller } else list }
         .sortedBy { if (state.sortAscending) it.price else -it.price }
 
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.padding(bottom = 80.dp)
-            )
-        },
-        containerColor = Color(0xFFFAF3E0)
-    ) { paddingValues ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFAF3E0))
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
         ) {
             // Custom Header
             Surface(
@@ -410,7 +405,15 @@ fun HomeScreen(navController: NavController) {
                     }
                 )
             }
+
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp)
+        )
     }
 
 

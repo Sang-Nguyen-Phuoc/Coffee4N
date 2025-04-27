@@ -120,7 +120,7 @@ fun OrdersScreen(navController: NavController) {
         val snackbarHostState = remember { SnackbarHostState() }
         var showDatePicker by remember { mutableStateOf(false) }
 
-        Scaffold(
+            Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {

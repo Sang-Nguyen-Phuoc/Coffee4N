@@ -1,30 +1,32 @@
 package com.example.coffee4n.ui.checkout
 
 import android.content.Context
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,6 +48,7 @@ fun CheckoutScreen(navController: NavController) {
     val userId = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         .getInt("userId", 0)
 
+    // Setup repositories and view models
     val firebaseDatabase = FirebaseDatabase.getInstance()
     val cartItemRepository = CartItemRepository(firebaseDatabase)
     val productRepository = ProductRepository(firebaseDatabase)
@@ -77,8 +80,9 @@ fun CheckoutScreen(navController: NavController) {
     var selectedDeliveryMethod by remember { mutableStateOf("PICKUP") }
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    // Show error dialog when errorMessage changes
+    // Handle error messages
     LaunchedEffect(checkoutState.errorMessage) {
         if (checkoutState.errorMessage != null) {
             errorMessage = checkoutState.errorMessage
@@ -87,437 +91,478 @@ fun CheckoutScreen(navController: NavController) {
         }
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    // Show success message as a Snackbar
-    checkoutState.successMessage?.let { message ->
-        LaunchedEffect(message) {
+    // Handle success messages
+    LaunchedEffect(checkoutState.successMessage) {
+        checkoutState.successMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
             checkoutViewModel.clearSuccessMessage()
         }
     }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "CHECKOUT",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF6B4E31)
-                    )
-                },
-                navigationIcon = {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFAF3E0))
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Enhanced Top Bar
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                shadowElevation = 4.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     IconButton(
                         onClick = { navController.popBackStack() },
-                        modifier = Modifier
-                            .padding(start = 8.dp)
-                            .size(32.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF6B4E31),
-                            modifier = Modifier.size(20.dp)
+                            tint = Color.Black,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color(0xFFFAF3E0),
-                    titleContentColor = Color(0xFF6B4E31),
-                    navigationIconContentColor = Color(0xFF6B4E31)
-                ),
-                modifier = Modifier
-                    .height(56.dp)
-                    .shadow(4.dp)
-            )
-        },
-        bottomBar = {
-            NavigationBar(
-                containerColor = Color(0xFFFAF3E0),
-                contentColor = Color(0xFF6B4E31)
-            ) {
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate(Destinations.HOME) },
-                    icon = {
-                        Icon(
-                            Icons.Default.Home,
-                            contentDescription = "Home",
-                            tint = Color(0xFF6B4E31)
-                        )
-                    },
-                    label = { Text("Home", color = Color(0xFF6B4E31)) }
-                )
-                NavigationBarItem(
-                    selected = true,
-                    onClick = { navController.navigate(Destinations.CART) },
-                    icon = {
-                        Icon(
-                            Icons.Default.ShoppingCart,
-                            contentDescription = "Cart",
-                            tint = Color(0xFF6B4E31)
-                        )
-                    },
-                    label = { Text("Cart", color = Color(0xFF6B4E31)) }
-                )
-            }
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color(0xFFF5E8C7)
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp, vertical = 16.dp)
-                .fillMaxSize()
-        ) {
-            AnimatedVisibility(
-                visible = cartState.isLoading,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(
-                        color = Color(0xFF6B4E31),
-                        strokeWidth = 4.dp
-                    )
-                }
-            }
 
-            AnimatedVisibility(
-                visible = !cartState.isLoading && cartState.error != null,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        cartState.error ?: "An error occurred",
-                        color = Color(0xFFE57373),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-
-            AnimatedVisibility(
-                visible = !cartState.isLoading && cartState.error == null && cartState.cartItems.isEmpty(),
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Your cart is empty",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF8D7A55)
-                    )
-                }
-            }
-
-            AnimatedVisibility(
-                visible = !cartState.isLoading && cartState.error == null && cartState.cartItems.isNotEmpty(),
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(bottom = 16.dp)
-                    ) {
-                        items(cartState.cartItems) { item ->
-                            CartItemCard(
-                                item = item,
-                                isOutOfStock = item.product.stockQuantity < item.cartItem.quantity
-                            )
-                        }
-                    }
-
-                    SummaryCard(
-                        itemTotal = cartState.itemTotal,
-                        tax = cartState.tax,
-                        total = cartState.total,
-                        appliedPromotion = checkoutState.appliedPromotion,
-                        finalTotal = checkoutState.finalTotal
-                    )
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     Text(
-                        "Delivery Method",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF6B4E31),
-                        modifier = Modifier.padding(top = 16.dp)
+                        "Checkout",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
                     )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            RadioButton(
-                                selected = selectedDeliveryMethod == "PICKUP",
-                                onClick = { selectedDeliveryMethod = "PICKUP" },
-                                colors = RadioButtonDefaults.colors(
-                                    selectedColor = Color(0xFF6B4E31),
-                                    unselectedColor = Color(0xFF8D7A55)
-                                )
-                            )
-                            Text(
-                                "Pickup",
-                                fontSize = 14.sp,
-                                color = Color(0xFF6B4E31)
-                            )
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            RadioButton(
-                                selected = selectedDeliveryMethod == "SHIPPING",
-                                onClick = { selectedDeliveryMethod = "SHIPPING" },
-                                colors = RadioButtonDefaults.colors(
-                                    selectedColor = Color(0xFF6B4E31),
-                                    unselectedColor = Color(0xFF8D7A55)
-                                )
-                            )
-                            Text(
-                                "Shipping",
-                                fontSize = 14.sp,
-                                color = Color(0xFF6B4E31)
-                            )
-                        }
-                    }
 
-                    OutlinedTextField(
-                        value = checkoutState.voucherCode,
-                        onValueChange = { checkoutViewModel.updateVoucherCode(it) },
-                        label = { Text("Enter Voucher Code") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp),
-                        enabled = !checkoutState.isApplyingVoucher,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF6B4E31),
-                            unfocusedBorderColor = Color(0xFF8D7A55),
-                            focusedLabelColor = Color(0xFF6B4E31),
-                            unfocusedLabelColor = Color(0xFF8D7A55),
-                            cursorColor = Color(0xFF6B4E31)
-                        )
-                    )
-                    Button(
-                        onClick = { checkoutViewModel.applyVoucher() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp)
-                            .height(56.dp)
-                            .shadow(8.dp, RoundedCornerShape(16.dp)),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF6B4E31),
-                            disabledContainerColor = Color(0xFFB0BEC5)
-                        ),
-                        enabled = !checkoutState.isApplyingVoucher
-                    ) {
-                        if (checkoutState.isApplyingVoucher) {
-                            CircularProgressIndicator(
-                                color = Color.White,
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text(
-                                "Apply Voucher",
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                    Spacer(modifier = Modifier.weight(1f))
 
-                    Button(
-                        onClick = { checkoutViewModel.showConfirmDialog(selectedDeliveryMethod) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp, bottom = 16.dp)
-                            .height(56.dp)
-                            .shadow(8.dp, RoundedCornerShape(16.dp)),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF6B4E31),
-                            disabledContainerColor = Color(0xFFB0BEC5)
-                        ),
-                        enabled = cartState.cartItems.isNotEmpty()
+                    // Progress indicator
+                    Surface(
+                        color = Color(239, 83, 80).copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            "Proceed to Checkout",
-                            color = Color.White,
-                            fontSize = 18.sp,
+                            text = "Final Step",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            color = Color(239, 83, 80),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // Content
+            when {
+                cartState.isLoading -> {
+                    LoadingState()
+                }
+                cartState.error != null -> {
+                    ErrorState(cartState.error ?: "An error occurred")
+                }
+                cartState.cartItems.isEmpty() -> {
+                    EmptyCartState(navController)
+                }
+                else -> {
+                    CheckoutContent(
+                        cartState = cartState,
+                        checkoutState = checkoutState,
+                        selectedDeliveryMethod = selectedDeliveryMethod,
+                        onDeliveryMethodChange = { selectedDeliveryMethod = it },
+                        onVoucherCodeChange = { checkoutViewModel.updateVoucherCode(it) },
+                        onApplyVoucher = { checkoutViewModel.applyVoucher() },
+                        onCheckout = { checkoutViewModel.showConfirmDialog(selectedDeliveryMethod) }
+                    )
+                }
+            }
+        }
+
+        // Snackbar
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 90.dp)
+        )
+
+        // Confirmation dialog
+        if (checkoutState.showConfirmDialog) {
+            ConfirmationDialog(
+                finalTotal = checkoutState.finalTotal,
+                onConfirm = {
+                    checkoutViewModel.checkout(selectedDeliveryMethod) {
+                        checkoutViewModel.hideConfirmDialog()
+                        navController.navigate(Destinations.HOME) {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                        }
+                    }
+                },
+                onDismiss = { checkoutViewModel.hideConfirmDialog() }
+            )
+        }
+
+        // Error dialog
+        if (showErrorDialog) {
+            ErrorDialog(
+                message = errorMessage ?: "An error occurred",
+                onDismiss = { showErrorDialog = false }
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = Color(239, 83, 80),
+            strokeWidth = 4.dp,
+            modifier = Modifier.size(48.dp)
+        )
+    }
+}
+
+@Composable
+private fun ErrorState(error: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Icon(
+                Icons.Default.Error,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = Color(239, 83, 80)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = error,
+                color = Color.Red,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyCartState(navController: NavController) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Icon(
+                Icons.Default.ShoppingCart,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(120.dp)
+                    .padding(bottom = 24.dp),
+                tint = Color.Gray.copy(alpha = 0.5f)
+            )
+            Text(
+                text = "Your cart is empty",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Add some items to your cart to continue",
+                fontSize = 16.sp,
+                color = Color.Gray,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Button(
+                onClick = { navController.navigate(Destinations.HOME) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .shadow(8.dp, RoundedCornerShape(28.dp)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(239, 83, 80)
+                ),
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                Icon(
+                    Icons.Default.Home,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Back to Home",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CheckoutContent(
+    cartState: com.example.coffee4n.ui.cart.CartState,
+    checkoutState: CheckoutState,
+    selectedDeliveryMethod: String,
+    onDeliveryMethodChange: (String) -> Unit,
+    onVoucherCodeChange: (String) -> Unit,
+    onApplyVoucher: () -> Unit,
+    onCheckout: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // Cart items list
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(vertical = 16.dp)
+        ) {
+            items(cartState.cartItems) { item ->
+                EnhancedCartItemCard(
+                    item = item,
+                    isOutOfStock = item.product.stockQuantity < item.cartItem.quantity
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                EnhancedSummaryCard(
+                    itemTotal = cartState.itemTotal,
+                    tax = cartState.tax,
+                    total = cartState.total,
+                    appliedPromotion = checkoutState.appliedPromotion,
+                    finalTotal = checkoutState.finalTotal
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                DeliveryMethodSection(
+                    selectedMethod = selectedDeliveryMethod,
+                    onMethodChange = onDeliveryMethodChange
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                VoucherSection(
+                    voucherCode = checkoutState.voucherCode,
+                    isApplying = checkoutState.isApplyingVoucher,
+                    onVoucherCodeChange = onVoucherCodeChange,
+                    onApplyVoucher = onApplyVoucher
+                )
+            }
+        }
+
+        // Bottom checkout button
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = Color.White,
+            shadowElevation = 8.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = "Total",
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = "$${String.format("%.2f", checkoutState.finalTotal)}",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(239, 83, 80)
+                        )
+                    }
+
+                    // Items count
+                    Surface(
+                        color = Color(239, 83, 80).copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "${cartState.cartItems.size} items",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            color = Color(239, 83, 80),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = onCheckout,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(239, 83, 80),
+                        disabledContainerColor = Color.Gray
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    enabled = cartState.cartItems.isNotEmpty()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Payment,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Confirm & Pay",
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
         }
-
-        // Confirmation dialog
-        if (checkoutState.showConfirmDialog) {
-            AlertDialog(
-                onDismissRequest = { checkoutViewModel.hideConfirmDialog() },
-                title = { Text("Confirm Checkout") },
-                text = { Text("Total price: $${"%.2f".format(checkoutState.finalTotal)}") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        checkoutViewModel.checkout(selectedDeliveryMethod) {
-                            checkoutViewModel.hideConfirmDialog()
-                            navController.navigate(Destinations.HOME) {
-                                popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                            }
-                        }
-                    }) {
-                        Text("Yes", color = Color(0xFF6B4E31))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { checkoutViewModel.hideConfirmDialog() }) {
-                        Text("No", color = Color(0xFF8D7A55))
-                    }
-                },
-                containerColor = Color(0xFFFAF3E0),
-                titleContentColor = Color(0xFF6B4E31),
-                textContentColor = Color(0xFF6B4E31)
-            )
-        }
-
-        // Error dialog
-        if (showErrorDialog) {
-            AlertDialog(
-                onDismissRequest = { showErrorDialog = false },
-                title = { Text("Information Required") },
-                text = { Text(errorMessage ?: "An error occurred") },
-                confirmButton = {
-                    TextButton(onClick = { showErrorDialog = false }) {
-                        Text("OK", color = Color(0xFF6B4E31))
-                    }
-                },
-                containerColor = Color(0xFFFAF3E0),
-                titleContentColor = Color(0xFF6B4E31),
-                textContentColor = Color(0xFF6B4E31)
-            )
-        }
     }
 }
 
 @Composable
-fun CartItemCard(
+fun EnhancedCartItemCard(
     item: CartItemWithProduct,
     isOutOfStock: Boolean
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(130.dp)
-            .padding(vertical = 8.dp)
-            .shadow(6.dp, RoundedCornerShape(16.dp)),
+            .animateContentSize(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = rememberAsyncImagePainter(
-                    model = item.product.imageUrl.ifEmpty { "https://fastly.picsum.photos/id/1011/200/200.jpg?hmac=ISwJXaLKDOtBGE_n3myoHUev_P_OH3zpWqLx0yHp0pY" }
-                ),
-                contentDescription = item.product.name,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.Crop
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f))
-                    .clip(RoundedCornerShape(16.dp))
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            // Product image
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.size(80.dp)
             ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = item.product.name,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
-                        maxLines = 2
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "$${"%.2f".format(item.product.price)}",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Quantity: ${item.cartItem.quantity}",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
-                }
+                Image(
+                    painter = rememberAsyncImagePainter(
+                        model = item.product.imageUrl.ifEmpty { "https://picsum.photos/200" }
+                    ),
+                    contentDescription = item.product.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
 
+                if (isOutOfStock) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.6f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Out of Stock",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
-                    text = "$${"%.2f".format(item.product.price * item.cartItem.quantity)}",
+                    text = item.product.name,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF6B4E31)
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-            }
 
-            if (isOutOfStock) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFE57373).copy(alpha = 0.1f))
-                        .padding(8.dp),
-                    contentAlignment = Alignment.Center
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Out of Stock",
-                        color = Color(0xFFE57373),
+                        text = "$${String.format("%.2f", item.product.price)}",
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "× ${item.cartItem.quantity}",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                }
+
+                if (item.cartItem.note != null && item.cartItem.note!!.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Note: ${item.cartItem.note}",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
+
+            Text(
+                text = "$${String.format("%.2f", item.product.price * item.cartItem.quantity)}",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(239, 83, 80)
+            )
         }
     }
 }
 
 @Composable
-fun SummaryCard(
+fun EnhancedSummaryCard(
     itemTotal: Double,
     tax: Double,
     total: Double,
@@ -525,28 +570,28 @@ fun SummaryCard(
     finalTotal: Double
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
-            .shadow(6.dp, RoundedCornerShape(16.dp)),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(
             modifier = Modifier
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFFFFFFF),
-                            Color(0xFFF8F1E9)
-                        )
-                    )
-                )
-                .padding(20.dp)
                 .fillMaxWidth()
+                .padding(16.dp)
         ) {
-            SummaryRow("Item Total", itemTotal)
+            Text(
+                text = "Order Summary",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SummaryRow("Subtotal", itemTotal)
             SummaryRow("Tax (2%)", tax)
+
             if (appliedPromotion != null) {
                 SummaryRow(
                     "Discount (${appliedPromotion.code})",
@@ -554,45 +599,288 @@ fun SummaryCard(
                     color = Color(0xFF4CAF50)
                 )
             }
+
             Divider(
                 modifier = Modifier.padding(vertical = 12.dp),
-                color = Color(0xFFE0E0E0),
-                thickness = 1.dp
+                color = Color(0xFFE0E0E0)
             )
+
             SummaryRow(
                 "Total",
                 finalTotal,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B4E31)
+                color = Color(239, 83, 80)
             )
         }
     }
 }
 
 @Composable
-fun SummaryRow(
+private fun SummaryRow(
     label: String,
     value: Double,
     fontWeight: FontWeight = FontWeight.Normal,
-    color: Color = Color(0xFF6B4E31)
+    color: Color = Color.Black
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            label,
-            fontSize = 16.sp,
+            text = label,
+            fontSize = 14.sp,
             fontWeight = fontWeight,
             color = color
         )
         Text(
-            "$${"%.2f".format(value)}",
-            fontSize = 16.sp,
+            text = "$${String.format("%.2f", value)}",
+            fontSize = 14.sp,
             fontWeight = fontWeight,
             color = color
         )
     }
+}
+
+@Composable
+private fun DeliveryMethodSection(
+    selectedMethod: String,
+    onMethodChange: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "Delivery Method",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            DeliveryOption(
+                title = "Pickup",
+                description = "Pick up at store",
+                icon = Icons.Default.Store,
+                isSelected = selectedMethod == "PICKUP",
+                modifier = Modifier.weight(1f)
+            ) {
+                onMethodChange("PICKUP")
+            }
+
+            DeliveryOption(
+                title = "Shipping",
+                description = "Delivery to address",
+                icon = Icons.Default.LocalShipping,
+                isSelected = selectedMethod == "SHIPPING",
+                modifier = Modifier.weight(1f)
+            ) {
+                onMethodChange("SHIPPING")
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeliveryOption(
+    title: String,
+    description: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick),
+        color = if (isSelected) Color(239, 83, 80).copy(alpha = 0.1f) else Color.White,
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 2.dp,
+            color = if (isSelected) Color(239, 83, 80) else Color.LightGray
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = if (isSelected) Color(239, 83, 80) else Color.Gray
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = title,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) Color(239, 83, 80) else Color.Black
+            )
+            Text(
+                text = description,
+                fontSize = 12.sp,
+                color = Color.Gray
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VoucherSection(
+    voucherCode: String,
+    isApplying: Boolean,
+    onVoucherCodeChange: (String) -> Unit,
+    onApplyVoucher: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "Have a voucher?",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = voucherCode,
+                onValueChange = onVoucherCodeChange,
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("Enter voucher code") },
+                enabled = !isApplying,
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(239, 83, 80),
+                    unfocusedBorderColor = Color.LightGray
+                ),
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            Button(
+                onClick = onApplyVoucher,
+                enabled = !isApplying && voucherCode.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(239, 83, 80),
+                    disabledContainerColor = Color.Gray
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.height(56.dp)
+            ) {
+                if (isApplying) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Apply")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConfirmationDialog(
+    finalTotal: Double,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Confirm Order",
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    "Your order total is:",
+                    fontSize = 16.sp,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "$${String.format("%.2f", finalTotal)}",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(239, 83, 80)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Would you like to proceed with payment?",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(239, 83, 80)
+                )
+            ) {
+                Text("Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color.Gray
+                )
+            ) {
+                Text("Cancel")
+            }
+        },
+        shape = RoundedCornerShape(16.dp)
+    )
+}
+
+@Composable
+private fun ErrorDialog(
+    message: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Information Required",
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color(239, 83, 80)
+                )
+            ) {
+                Text("OK")
+            }
+        },
+        shape = RoundedCornerShape(16.dp)
+    )
 }
