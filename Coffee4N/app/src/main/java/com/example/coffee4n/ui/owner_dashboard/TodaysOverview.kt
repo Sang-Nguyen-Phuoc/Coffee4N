@@ -46,15 +46,6 @@ fun TodaysOverviewCard(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-
-                if (lowStockItems > 0) {
-                    Badge(
-                        containerColor = Color(0xFFE38B73),
-                        contentColor = Color.White
-                    ) {
-                        Text(text = lowStockItems.toString())
-                    }
-                }
             }
 
             error?.let { errorMsg ->
