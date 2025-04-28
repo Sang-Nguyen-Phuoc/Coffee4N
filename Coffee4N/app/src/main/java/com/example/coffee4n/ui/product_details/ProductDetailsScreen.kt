@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -37,6 +39,8 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.coffee4n.R
 import com.example.coffee4n.model.Product
 import com.example.coffee4n.navigation.Destinations
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -474,6 +478,16 @@ fun ProductDetailsScreen(
                             }
                         }
 
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Similar Products Section
+                        SimilarProductsSection(
+                            similarProducts = productState.similarProducts,
+                            onProductClick = { productId ->
+                                navController.navigate(Destinations.productDetails(productId))
+                            }
+                        )
+
                         Spacer(modifier = Modifier.height(100.dp))
                     }
                 }
@@ -686,5 +700,96 @@ fun EnhancedInfoRow(
             fontWeight = FontWeight.Bold,
             color = Color.Black
         )
+    }
+}
+
+@Composable
+fun SimilarProductsSection(
+    similarProducts: List<Product>,
+    onProductClick: (Int) -> Unit
+) {
+    if (similarProducts.isNotEmpty()) {
+        Text(
+            text = "Similar Products",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(end = 16.dp)
+        ) {
+            items(
+                items = similarProducts,
+                key = { product -> product.id }
+            ) { product ->
+                SimilarProductCard(
+                    product = product,
+                    onClick = { onProductClick(product.id) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SimilarProductCard(
+    product: Product,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(160.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp)
+            ) {
+                if (!product.imageUrl.isNullOrEmpty()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(model = product.imageUrl),
+                        contentDescription = product.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_coffee),
+                        contentDescription = product.name,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier.padding(12.dp)
+            ) {
+                Text(
+                    text = product.name,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Text(
+                    text = "$${String.format("%.2f", product.price)}",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(239, 83, 80),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
     }
 }
