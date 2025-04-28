@@ -242,7 +242,7 @@ private fun TablesList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(top = 16.dp, start = 16.dp, bottom = 96.dp, end = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         itemsIndexed(tables) { index, table ->
