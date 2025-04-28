@@ -67,13 +67,14 @@ fun TransactionTab(
     )
 
     var searchQuery by remember { mutableStateOf(initIngredientName) }
+    var itemsToShow by remember { mutableStateOf(10) }
 
     val state by viewModel.state.collectAsState()
 
     val filterTransaction = state.transactions
         .filter { it.ingredientName.contains(searchQuery, ignoreCase = true) }
         .filter {
-            when(state.selectedFilter) {
+            when (state.selectedFilter) {
                 1 -> it.transaction.type == TransactionType.IMPORT
                 2 -> it.transaction.type == TransactionType.EXPORT
                 else -> true
@@ -82,13 +83,14 @@ fun TransactionTab(
         .filter {
             val converters = Converters()
             val transactionTime = it.transaction.timestamp
-            (state.startDate == "" || transactionTime >= converters.stringToTimestamp(state.startDate)) &&
-            (state.endDate == "" || transactionTime <= converters.stringToTimestamp(state.endDate))
+            (state.startDate.isEmpty() || transactionTime >= converters.stringToTimestamp(state.startDate)) &&
+                    (state.endDate.isEmpty() || transactionTime <= converters.stringToTimestamp(state.endDate))
         }
 
+    val displayedTransactions = filterTransaction.take(itemsToShow)
+
     Box(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
         if (state.isLoading) {
             CircularProgressIndicator(
@@ -96,17 +98,25 @@ fun TransactionTab(
                 color = Color(0xFFC67C4E)
             )
         } else {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
                 TextField(
                     value = searchQuery,
-                    onValueChange = { searchQuery = it },
+                    onValueChange = { searchQuery = it; itemsToShow = 15 },
                     placeholder = { Text("Search ingredient") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(8.dp)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .clip(RoundedCornerShape(8.dp)),
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = {
                                 searchQuery = ""
+                                itemsToShow = 15
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Cancel,
@@ -126,7 +136,10 @@ fun TransactionTab(
                     itemsIndexed(state.filterList) { index, title ->
                         val selected = index == state.selectedFilter
                         Button(
-                            onClick = { viewModel.updateSelectedFilter(index) },
+                            onClick = {
+                                viewModel.updateSelectedFilter(index)
+                                itemsToShow = 15
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (selected) Color(0xFFC67C4E) else Color.Gray,
                                 contentColor = Color.White
@@ -139,23 +152,25 @@ fun TransactionTab(
                 }
 
                 Spacer(modifier = Modifier.height(5.dp))
+
                 DateSelector(
                     label = "From",
                     date = state.startDate,
                     defaultTime = "00:00",
-                    onDateSelected = { date -> viewModel.updateStartDate(date) },
-                    onClear = { viewModel.updateStartDate("") }
+                    onDateSelected = { date -> viewModel.updateStartDate(date); itemsToShow = 15 },
+                    onClear = { viewModel.updateStartDate(""); itemsToShow = 15 }
                 )
 
                 DateSelector(
                     label = "To",
                     date = state.endDate,
                     defaultTime = "23:59",
-                    onDateSelected = { date -> viewModel.updateEndDate(date) },
-                    onClear = { viewModel.updateEndDate("") }
+                    onDateSelected = { date -> viewModel.updateEndDate(date); itemsToShow = 15 },
+                    onClear = { viewModel.updateEndDate(""); itemsToShow = 15 }
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
@@ -173,14 +188,32 @@ fun TransactionTab(
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
+
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                    ,
+                    modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    items(filterTransaction) { transaction ->
+                    itemsIndexed(displayedTransactions) { index, transaction ->
                         TransactionCard(transaction)
+                    }
+
+                    if (displayedTransactions.size < filterTransaction.size) {
+                        item {
+                            Button(
+                                onClick = {
+                                    itemsToShow += 10
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFC67C4E),
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Text(text = "Load More")
+                            }
+                        }
                     }
                 }
             }
