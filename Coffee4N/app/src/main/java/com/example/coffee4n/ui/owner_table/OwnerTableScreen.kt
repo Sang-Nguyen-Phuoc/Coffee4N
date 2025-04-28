@@ -171,18 +171,6 @@ fun OwnerTableScreen(viewModel: OwnerTableViewModel = viewModel()) {
                         }
                     }
                 }
-                if (state.tables.isNotEmpty()) {
-                    SummaryCard(
-                        tables = state.tables,
-                        availableColor = availableColor,
-                        bookedColor = bookedColor,
-                        bookingCount = state.bookingCount, // Truyền tham số mới
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                            .align(Alignment.BottomCenter)
-                    )
-                }
             }
         }
 
@@ -643,77 +631,6 @@ fun TableCard(
                             color = Color.White.copy(alpha = 0.8f)
                         )
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SummaryCard(
-    tables: List<Table>,
-    availableColor: Color,
-    bookedColor: Color,
-    bookingCount: Map<Int, Int>, // Thêm tham số mới
-    modifier: Modifier = Modifier
-) {
-
-    val totalBookings = bookingCount.values.sum() // Tổng số đơn đặt bàn
-    val totalCapacity = tables.sumOf { it.capacity }
-
-    Card(
-        modifier = modifier
-            .shadow(8.dp, RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "Tables Summary",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = totalBookings.toString(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = bookedColor
-                    )
-                    Text(
-                        text = "Bookings",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = totalCapacity.toString(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Seats",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
                 }
             }
         }
