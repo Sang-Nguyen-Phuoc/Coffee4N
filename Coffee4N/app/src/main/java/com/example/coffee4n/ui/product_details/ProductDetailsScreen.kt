@@ -488,8 +488,18 @@ fun ProductDetailsScreen(
                             navController.navigate(Destinations.productDetails(productId))
                         }
                     )
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                    Spacer(modifier = Modifier.height(100.dp))
+                        // Similar Products Section
+                        SimilarProductsSection(
+                            similarProducts = productState.similarProducts,
+                            onProductClick = { productId ->
+                                navController.navigate(Destinations.productDetails(productId))
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(100.dp))
+                    }
                 }
             }
         }

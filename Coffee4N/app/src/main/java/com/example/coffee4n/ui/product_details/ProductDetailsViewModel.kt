@@ -82,6 +82,8 @@ class ProductDetailsViewModel(application: Application) : AndroidViewModel(appli
                             )
                         }
                     }
+
+                    loadSimilarProducts(product)
                 }
             } catch (e: Exception) {
                 _productState.update {
@@ -219,9 +221,38 @@ class ProductDetailsViewModel(application: Application) : AndroidViewModel(appli
     fun dismissLoginDialog() {
         _productState.update { it.copy(showLoginDialog = false) }
     }
+
+    fun loadSimilarProducts(currentProduct: Product) {
+        viewModelScope.launch {
+            try {
+                productRepository.getProductsFlow().collect { allProducts ->
+                    val similarProducts = allProducts.filter { product ->
+                        // Logic to get similar products:
+                        // 1. Same category (primary criteria)
+                        // 2. Not the current product
+                        // 3. In stock
+                        // 4. Price range within ±30% of current product
+                        product.id != currentProduct.id &&
+                                product.categoryId == currentProduct.categoryId &&
+                                product.stockQuantity > 0 &&
+                                product.price.let {
+                                    it >= currentProduct.price * 0.7 &&
+                                            it <= currentProduct.price * 1.3
+                                }
+                    }
+                        .take(4) // Show max 4 similar products
+
+                    _productState.update { it.copy(similarProducts = similarProducts) }
+                }
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
 }
 
 data class ProductDetailsState(
+    val similarProducts: List<Product> = emptyList(),
     val product: Product? = null,
     val isLoading: Boolean = false,
     val isAddingToCart: Boolean = false,
