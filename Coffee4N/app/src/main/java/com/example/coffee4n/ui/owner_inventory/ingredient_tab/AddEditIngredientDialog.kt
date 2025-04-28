@@ -106,7 +106,10 @@ fun AddEditIngredientDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC67C4E)),
                 shape = RoundedCornerShape(8.dp),
             ) {
-                Text("Save", color = Color.White)
+                Text(
+                    text = if (isNew) "Add" else "Update",
+                    color = Color.White
+                )
             }
         },
         dismissButton = {

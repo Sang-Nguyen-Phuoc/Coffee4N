@@ -44,6 +44,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun FavoritesScreen(
     navController: NavController,
+    parentNavController: NavController,
     viewModel: FavoritesViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -194,7 +195,7 @@ fun FavoritesScreen(
                         TextButton(
                             onClick = {
                                 viewModel.dismissLoginDialog()
-                                navController.navigate(Destinations.LOGIN)
+                                parentNavController.navigate(Destinations.LOGIN)
                             }
                         ) {
                             Text("Login")

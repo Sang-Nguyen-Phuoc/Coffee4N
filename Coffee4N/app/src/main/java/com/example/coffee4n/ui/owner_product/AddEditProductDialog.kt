@@ -321,7 +321,7 @@ fun AddEditProductDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC67C4E)),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text(if (isEdit) "Update" else "Save", color = Color.White)
+                Text(if (isEdit) "Update" else "Add", color = Color.White)
             }
         },
         dismissButton = {
