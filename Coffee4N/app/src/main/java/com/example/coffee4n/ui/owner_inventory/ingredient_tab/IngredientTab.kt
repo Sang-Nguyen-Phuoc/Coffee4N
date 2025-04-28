@@ -39,6 +39,8 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,15 +79,19 @@ fun IngredientTab(
         .filter {
             when (state.selectedFilter) {
                 1 -> it.quantity > it.threshold
-                2 -> it.quantity in 1 .. it.threshold
+                2 -> it.quantity in 1..it.threshold
                 3 -> it.quantity <= 0
                 else -> true
             }
         }
 
+    val itemsPerPage = 10
+    val visibleItemsCount = remember { mutableStateOf(itemsPerPage) }
+
+    val ingredientsToShow = filteredIngredients.take(visibleItemsCount.value)
+
     Box(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
         if (state.isLoading) {
             CircularProgressIndicator(
@@ -93,17 +99,28 @@ fun IngredientTab(
                 color = Color(0xFFC67C4E)
             )
         } else {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
                 TextField(
                     value = state.searchQuery,
-                    onValueChange = { viewModel.updateSearchQuery(it) },
+                    onValueChange = {
+                        viewModel.updateSearchQuery(it)
+                        visibleItemsCount.value = itemsPerPage // Reset khi search
+                    },
                     placeholder = { Text("Search ingredient") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(8.dp)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .clip(RoundedCornerShape(8.dp)),
                     trailingIcon = {
                         if (state.searchQuery.isNotEmpty()) {
                             IconButton(onClick = {
                                 viewModel.updateSearchQuery("")
+                                visibleItemsCount.value = itemsPerPage // Reset khi clear
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Cancel,
@@ -123,7 +140,10 @@ fun IngredientTab(
                     itemsIndexed(state.filterList) { index, title ->
                         val selected = index == state.selectedFilter
                         Button(
-                            onClick = { viewModel.updateSelectedFilter(index) },
+                            onClick = {
+                                viewModel.updateSelectedFilter(index)
+                                visibleItemsCount.value = itemsPerPage // Reset khi đổi filter
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (selected) Color(0xFFC67C4E) else Color.Gray,
                                 contentColor = Color.White
@@ -136,10 +156,11 @@ fun IngredientTab(
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Total Ingredients:",
+                        text = "Total Ingredients: ",
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     Spacer(modifier = Modifier.width(5.dp))
@@ -155,13 +176,13 @@ fun IngredientTab(
                 Spacer(modifier = Modifier.height(4.dp))
                 LazyColumn(
                     modifier = Modifier
-                        .fillMaxSize()
-                    ,
+                        .weight(1f)
+                        .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    items(filteredIngredients) { ingredient ->
+                    itemsIndexed(ingredientsToShow) { index, ingredient ->
                         Button(
-                            onClick = {onIngredientSelected(ingredient.name)},
+                            onClick = { onIngredientSelected(ingredient.name) },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color.Transparent,
                                 contentColor = Color.Unspecified
@@ -176,26 +197,45 @@ fun IngredientTab(
                                     viewModel.showAddTransactionDialog(selectedIngredient, type)
                                 },
                                 onShowEditIngredientDialog = { selectedIngredient ->
-                                    viewModel.showAddEditIngredientDialog(isNew = false, ingredient = selectedIngredient)
+                                    viewModel.showAddEditIngredientDialog(false, selectedIngredient)
                                 },
-                                onShowConfirmDeleteIngreDientDialog = { seletedIngredient ->
-                                    viewModel.showConfirmDeleteIngredientDialog(ingredient)
+                                onShowConfirmDeleteIngreDientDialog = { selectedIngredient ->
+                                    viewModel.showConfirmDeleteIngredientDialog(selectedIngredient)
                                 }
                             )
+                        }
+                    }
+                    item {
+                        if (ingredientsToShow.size < filteredIngredients.size) {
+                            Button(
+                                onClick = {
+                                    visibleItemsCount.value = (visibleItemsCount.value + itemsPerPage).coerceAtMost(filteredIngredients.size)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFC67C4E),
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Text("Load More")
+                            }
                         }
                     }
                 }
             }
         }
     }
+
     if (state.showAddTransactionDialog) {
         AddTransactionDialog(
             ingredient = state.selectedIngredient,
             transactionType = state.transactionType,
-            onQuantityChange = {viewModel.updateQuantityInput(it)},
-            onUnitPriceChange = {viewModel.updateUnitPriceInput(it)},
-            onTransact = {viewModel.onTransact()},
-            onDismiss = {viewModel.onDismiss()}
+            onQuantityChange = { viewModel.updateQuantityInput(it) },
+            onUnitPriceChange = { viewModel.updateUnitPriceInput(it) },
+            onTransact = { viewModel.onTransact() },
+            onDismiss = { viewModel.onDismiss() }
         )
     }
 
@@ -221,6 +261,7 @@ fun IngredientTab(
         )
     }
 }
+
 
 //@Preview
 //@Composable

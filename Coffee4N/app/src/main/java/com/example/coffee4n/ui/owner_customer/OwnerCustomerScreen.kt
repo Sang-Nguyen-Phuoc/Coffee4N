@@ -66,6 +66,8 @@ fun OwnerCustomerScreen() {
 
     val state by viewModel.state.collectAsState()
 
+    var itemsToShow by remember { mutableStateOf(10) }
+
     val searchCustomers = state.customers.filter {
            it.name.contains(state.searchQuery, ignoreCase = true)
         || it.email.contains(state.searchQuery, ignoreCase = true)
@@ -73,6 +75,8 @@ fun OwnerCustomerScreen() {
         || it.address.contains(state.searchQuery, ignoreCase = true)
         || it.phone.contains(state.searchQuery, ignoreCase = true)
     }
+
+    val displayCustomer = searchCustomers.take(itemsToShow)
 
     Scaffold(
         topBar = {
@@ -151,7 +155,7 @@ fun OwnerCustomerScreen() {
                             .fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        items(searchCustomers) { customer ->
+                        items(displayCustomer) { customer ->
                             Button(
                                 onClick = { viewModel.onShowCustomerDetail(customer)},
                                 colors = ButtonDefaults.buttonColors(
@@ -163,6 +167,24 @@ fun OwnerCustomerScreen() {
                                 shape = RectangleShape
                             ) {
                                 CustomerCard(customer)
+                            }
+                        }
+                        if (displayCustomer.size < searchCustomers.size) {
+                            item {
+                                Button(
+                                    onClick = {
+                                        itemsToShow += 10
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFFC67C4E),
+                                        contentColor = Color.White
+                                    )
+                                ) {
+                                    Text(text = "Load More")
+                                }
                             }
                         }
                     }

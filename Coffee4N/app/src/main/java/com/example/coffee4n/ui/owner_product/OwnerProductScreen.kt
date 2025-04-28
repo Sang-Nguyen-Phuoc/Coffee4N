@@ -35,6 +35,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,12 +72,15 @@ fun OwnerProductScreen(navController: NavController) {
     )
 
     val state by viewModel.state.collectAsState()
+    var itemsToShow by remember { mutableStateOf(10) }
 
     val filteredProducts = state.products
         .filter { it.categoryId == state.selectedCategory || state.selectedCategory == 0 }
         .filter { it.name.contains(state.searchQuery, ignoreCase = true) }
         .let { list -> if (state.showBestSellers) list.filter { it.isBestSeller } else list }
         .sortedBy { if (state.sortAscending) it.price else -it.price }
+
+    val displayProducts = filteredProducts.take(itemsToShow)
 
     Scaffold(
         topBar = {
@@ -229,12 +235,30 @@ fun OwnerProductScreen(navController: NavController) {
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        items(filteredProducts) { product ->
+                        items(displayProducts) { product ->
                             ProductCard(
                                 product = product,
                                 onEditClick = { viewModel.showEditDialog(product) },
                                 onDeleteClick = { viewModel.showDeleteConfirmation(product) }
                             )
+                        }
+                        if (displayProducts.size < filteredProducts.size) {
+                            item {
+                                Button(
+                                    onClick = {
+                                        itemsToShow += 10
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFFC67C4E),
+                                        contentColor = Color.White
+                                    )
+                                ) {
+                                    Text(text = "Load More")
+                                }
+                            }
                         }
                     }
                 }

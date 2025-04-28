@@ -59,6 +59,7 @@ fun HomeScreen(navController: NavController, parentNavController: NavController)
     )
 
     val state by viewModel.state.collectAsState()
+    var itemsToShow by remember { mutableStateOf(10) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Show snackbar for messages
@@ -74,6 +75,8 @@ fun HomeScreen(navController: NavController, parentNavController: NavController)
         .filter { it.name.contains(state.searchQuery, ignoreCase = true) }
         .let { list -> if (state.showBestSellers) list.filter { it.isBestSeller } else list }
         .sortedBy { if (state.sortAscending) it.price else -it.price }
+
+    val displayProducts = filteredProducts.take(itemsToShow)
 
     Box(
         modifier = Modifier
@@ -370,7 +373,7 @@ fun HomeScreen(navController: NavController, parentNavController: NavController)
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(
-                        items = filteredProducts,
+                        items = displayProducts,
                         key = { it.id }
                     ) { product ->
                         ModernProductCard(
@@ -378,6 +381,24 @@ fun HomeScreen(navController: NavController, parentNavController: NavController)
                             navController = navController,
                             onAddToCart = { viewModel.addToCart(product) }
                         )
+                    }
+                    if (displayProducts.size < filteredProducts.size) {
+                        item {
+                            Button(
+                                onClick = {
+                                    itemsToShow += 10
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(239, 83, 80),
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Text(text = "Load More")
+                            }
+                        }
                     }
                 }
             }
