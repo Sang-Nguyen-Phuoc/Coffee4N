@@ -154,7 +154,7 @@ fun OwnerProfileScreen(navController: NavController) {
                             contentDescription = "Edit account",
                             modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Edit shop information", fontSize = 16.sp)
+                        Text("Edit store information", fontSize = 16.sp)
                     }
 
                     Column(

@@ -37,7 +37,7 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OrdersScreen(navController: NavController) {
+fun OrdersScreen(navController: NavController, parentNavController: NavController) {
     val context = LocalContext.current
     val userId = try {
         context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE).getInt("userId", 0)
@@ -52,7 +52,7 @@ fun OrdersScreen(navController: NavController) {
                 .background(Color(0xFFFAF3E0)),
             contentAlignment = Alignment.Center
         ) {
-            LoginRequiredContent(navController)
+            LoginRequiredContent(parentNavController)
         }
     } else {
         val orderRepository = try {

@@ -43,6 +43,7 @@ import com.example.coffee4n.navigation.Destinations
 fun ProductDetailsScreen(
     navController: NavController,
     productId: Int,
+    parentNavController: NavController,
     viewModel: ProductDetailsViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -620,7 +621,7 @@ fun ProductDetailsScreen(
                     TextButton(
                         onClick = {
                             viewModel.dismissLoginDialog()
-                            navController.navigate(Destinations.LOGIN)
+                            parentNavController.navigate(Destinations.LOGIN)
                         }
                     ) {
                         Text("Login")

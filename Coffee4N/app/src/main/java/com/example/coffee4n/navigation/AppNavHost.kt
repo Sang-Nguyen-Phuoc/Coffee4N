@@ -172,14 +172,14 @@ fun AppNavHost(startDestination: String = Destinations.HOME, parentNavController
                     navController = navController,
                     startDestination = startDestination
                 ) {
-                    composable(Destinations.HOME) { HomeScreen(navController) }
-                    composable(Destinations.ORDERS) { OrdersScreen(parentNavController) }
+                    composable(Destinations.HOME) { HomeScreen(navController, parentNavController) }
+                    composable(Destinations.ORDERS) { OrdersScreen(navController, parentNavController) }
                     composable(Destinations.CART) { CartScreen(navController) }
                     composable(Destinations.CHECKOUT) { CheckoutScreen(navController) }
-                    composable(Destinations.NOTIFICATIONS) { NotificationsScreen(parentNavController) }
+                    //composable(Destinations.NOTIFICATIONS) { NotificationsScreen(navController) }
                     composable(Destinations.PROFILE) { ProfileScreen(parentNavController) }
-                    composable(Destinations.BOOKING_TABLE) { BookingTableScreen(parentNavController) }
-                    composable(Destinations.FAVORITES) { FavoritesScreen(navController)}
+                    composable(Destinations.BOOKING_TABLE) { BookingTableScreen(navController) }
+                    composable(Destinations.FAVORITES) { FavoritesScreen(navController, parentNavController)}
 
                     composable(
                         route = Destinations.PRODUCT_DETAILS,
@@ -188,7 +188,7 @@ fun AppNavHost(startDestination: String = Destinations.HOME, parentNavController
                         )
                     ) { backStackEntry ->
                         val productId = backStackEntry.arguments?.getInt("productId") ?: 0
-                        ProductDetailsScreen(navController = navController, productId = productId)
+                        ProductDetailsScreen(navController = navController, productId = productId, parentNavController = parentNavController)
                     }
                 }
             }
@@ -202,7 +202,7 @@ fun AppNavHost(startDestination: String = Destinations.HOME, parentNavController
                 text = { Text("Login to view cart") },
                 confirmButton = {
                     TextButton(onClick = {
-                        navController.navigate(Destinations.LOGIN)
+                        parentNavController.navigate(Destinations.LOGIN)
                         showLoginDialog = false
                     }) {
                         Text("Yes")

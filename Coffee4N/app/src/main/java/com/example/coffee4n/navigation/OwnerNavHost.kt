@@ -65,7 +65,7 @@ fun OwnerNavHost(startDestination: String = Destinations.OWNER_DASHBOARD, parent
                 )
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.Receipt, contentDescription = "Order/Promo", Modifier.size(35.dp)) },
-                    label = { Text("Promo/Ord", fontSize = 9.7.sp) },
+                    label = { Text("Orders", fontSize = 9.7.sp) },
                     selected = currentRoute == Destinations.OWNER_ORDERS,
                     onClick = {
                         if (currentRoute == Destinations.OWNER_ORDERS) {
@@ -168,7 +168,7 @@ fun OwnerNavHost(startDestination: String = Destinations.OWNER_DASHBOARD, parent
             composable(Destinations.OWNER_CUSTOMERS) { OwnerCustomerScreen() }
             composable(Destinations.OWNER_INVENTORY) { OwnerInventoryScreen() }
             composable(Destinations.OWNER_EMPLOYEES) { OwnerEmployeeScreen() }
-            composable(Destinations.OWNER_INSIGHTS) { InsightsScreen(parentNavController) }
+            composable(Destinations.OWNER_INSIGHTS) { InsightsScreen(navController) }
             composable(Destinations.OWNER_TABLES) { OwnerTableScreen() }
             composable(Destinations.OWNER_PROFILE) { OwnerProfileScreen(parentNavController) }
         }

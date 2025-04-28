@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(navController: NavController, parentNavController: NavController) {
     val context = LocalContext.current
     val viewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -392,7 +392,7 @@ fun HomeScreen(navController: NavController) {
                         TextButton(
                             onClick = {
                                 viewModel.dismissLoginDialog()
-                                navController.navigate(Destinations.LOGIN)
+                                parentNavController.navigate(Destinations.LOGIN)
                             }
                         ) {
                             Text("Login")
@@ -412,7 +412,6 @@ fun HomeScreen(navController: NavController) {
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp)
         )
     }
 
