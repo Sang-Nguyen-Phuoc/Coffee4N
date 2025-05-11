@@ -39,10 +39,11 @@ class OwnerOrderViewModel(
             try {
                 orderRepository.getAllOrders(1, _state.value.orderPageSize).collect { orders ->
                     _state.update { currentState ->
-                        val filteredOrders = applyFilters(orders, currentState.filterStatus, currentState.orderSearchQuery)
+                        val sortedOrder = orders.sortedByDescending { it.orderDate }
+                        val filteredOrders = applyFilters(sortedOrder, currentState.filterStatus, currentState.orderSearchQuery)
                         val totalOrders = orderRepository.getTotalOrderCount()
                         currentState.copy(
-                            orders = orders,
+                            orders = sortedOrder,
                             filteredOrders = filteredOrders,
                             isLoading = false,
                             error = null,
@@ -136,7 +137,8 @@ class OwnerOrderViewModel(
             try {
                 orderRepository.getAllOrders(nextPage, _state.value.orderPageSize).collect { newOrders ->
                     _state.update { currentState ->
-                        val updatedOrders = currentState.orders + newOrders
+                        var updatedOrders = currentState.orders + newOrders
+                        updatedOrders = updatedOrders.sortedByDescending { it.orderDate }
                         val filteredOrders = applyFilters(updatedOrders, currentState.filterStatus, currentState.orderSearchQuery)
                         val totalOrders = orderRepository.getTotalOrderCount()
                         currentState.copy(
@@ -166,10 +168,11 @@ class OwnerOrderViewModel(
             try {
                 orderRepository.getAllOrders(1, _state.value.orderPageSize).collect { orders ->
                     _state.update { currentState ->
-                        val filteredOrders = applyFilters(orders, currentState.filterStatus, currentState.orderSearchQuery)
+                        val sortedOrders = orders.sortedByDescending { it.orderDate }
+                        val filteredOrders = applyFilters(sortedOrders, currentState.filterStatus, currentState.orderSearchQuery)
                         val totalOrders = orderRepository.getTotalOrderCount()
                         currentState.copy(
-                            orders = orders,
+                            orders = sortedOrders,
                             filteredOrders = filteredOrders,
                             isLoading = false,
                             error = null,

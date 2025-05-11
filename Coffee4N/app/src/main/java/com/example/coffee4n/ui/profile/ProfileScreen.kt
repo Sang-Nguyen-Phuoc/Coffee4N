@@ -335,16 +335,16 @@ private fun ProfileContent(
                     text = "Edit Profile",
                     icon = Icons.Default.Edit,
                     onClick = onEditClick,
-                    backgroundColor = Color(239, 83, 80).copy(alpha = 0.1f),
-                    contentColor = Color(239, 83, 80)
+                    backgroundColor = Color(239, 83, 80),
+                    contentColor = Color.White
                 )
 
                 EnhancedButton(
                     text = "Sign Out",
                     icon = Icons.Default.Logout,
                     onClick = onLogoutClick,
-                    backgroundColor = Color.Red.copy(alpha = 0.1f),
-                    contentColor = Color.Red
+                    backgroundColor = Color.Red,
+                    contentColor = Color.White
                 )
             } else {
                 EnhancedButton(
